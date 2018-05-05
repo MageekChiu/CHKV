@@ -1,0 +1,62 @@
+version: "2"
+
+services:
+    server:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        image: netserver:0.1
+        restart: always
+        command: java -jar target/NameNode-1.0-SNAPSHOT-jar-with-dependencies.jar
+        volumes:
+            - ./:/var/netserver
+        # 看日志 这个好像不能严格保证顺序，导致时而连得上时而连不上，因为应用起来了 mysql还没起，应用 sleep一会就好了。。。。。搞得我以为是network的问题，其实是顺序问题
+        # 看官网 确实有这个问题
+        depends_on:
+            - dbs
+            - redis
+        networks:
+            - netservice
+        ports:
+            - 8899:4567
+        environment:
+            - ENVIRONMENT=production
+        #logging:
+           #    driver: none
+
+# mysql -uroot -P8888 -p
+    dbs:
+        image: mysql:5.5.58
+        volumes:
+            - /var/lib/mysqldocker:/var/lib/mysql
+            - ./NameNode.sql:/docker-entrypoint-initdb.d/NameNode.sql
+        ports:
+            - 8990:3306
+        networks:
+            - netservice
+        environment:
+            - MYSQL_ROOT_PASSWORD=MysqlRootPass
+            - MYSQL_DATABASE=NameNode
+            - MYSQL_USER=NetServeruser
+            - MYSQL_PASSWORD=NetServerpass
+
+# redis-cli -p 6388
+    redis:
+        ports:
+            - 6388:6379
+        image: redis:4-alpine
+        networks:
+            - netservice
+        command: redis-server /usr/local/etc/redis/redis.conf
+        volumes:
+            - ./redis4.0.conf:/usr/local/etc/redis/redis.conf
+
+
+networks:
+    netservice:
+        driver: bridge
+
+
+
+
+
