@@ -1,7 +1,7 @@
-package cn.mageek.common.handler;
+package cn.mageek.client.handler;
 
-import cn.mageek.common.model.RcvMsgObject;
 import cn.mageek.CHKV.util.Encoder;
+import cn.mageek.common.model.RcvMsgObject;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;

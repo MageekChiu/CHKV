@@ -15,20 +15,21 @@ import java.util.concurrent.ConcurrentHashMap;
  * @date 2018/3/13 0013:21:49
  */
 public class CommandFactory {
-    private static final String packageDir = "cn/mageek/NetServer/command";
     private static final String packagePrefix = "cn.mageek.common.command.";
     private static final Logger logger = LoggerFactory.getLogger(CommandFactory.class);
 
-    private static volatile Map<String,Command> commandMap ;
+    private static volatile Map<String,Command> commandMap ;// 存储所有命令
+    private static volatile Map<String,String> DATA_POOL ;// 数据存储池
 
-    public static void construct() throws Exception {
+    public static void construct(Map<String,String> dataPool) throws Exception {
         if(commandMap==null){//volatile+双重检查来实现单例模式
             synchronized (CommandFactory.class){
                 if (commandMap==null){
                     commandMap = new ConcurrentHashMap<>();
                     // Command 池 如果初始化不成功 整个程序就无法正常运转，所以不用try catch, 直接采用快速失败原则
+                    DATA_POOL = dataPool;
                     getAllCommands(commandMap);
-                    logger.info("Command pool initialized, number : {}",commandMap.size());
+                    logger.info("Command pool initialized, number : {}, DATA_POOL :{}",commandMap.size(),DATA_POOL.hashCode());
                 }
             }
         }
@@ -53,8 +54,10 @@ public class CommandFactory {
         for(Class clazz : subTypes){
             String className = clazz.getName();
             String commandId = className.substring(idStart);
-            logger.debug("Command class found: {} , Id: {}",clazz.getName(),commandId);
-            commandMap.put(commandId,(Command)clazz.newInstance());
+            logger.debug("Command class found: {} , Id: {}",className,commandId);
+            Command command = (Command)clazz.newInstance();
+            command.setDataPool(DATA_POOL);
+            commandMap.put(commandId,command);
         }
     }
 

@@ -1,8 +1,8 @@
-package cn.mageek.common.handler;
+package cn.mageek.namenode.handler;
 
-import cn.mageek.common.res.CommandFactory;
 import cn.mageek.common.command.Command;
 import cn.mageek.common.model.RcvMsgObject;
+import cn.mageek.common.res.CommandFactory;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.slf4j.Logger;

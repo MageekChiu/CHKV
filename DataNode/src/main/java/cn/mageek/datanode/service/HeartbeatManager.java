@@ -1,6 +1,6 @@
 package cn.mageek.datanode.service;
 
-import cn.mageek.common.handler.*;
+import cn.mageek.datanode.handler.*;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -21,15 +21,15 @@ import java.util.concurrent.CountDownLatch;
  * @author Mageek Chiu
  * @date 2018/3/7 0007:20:18
  */
-public class DataNodeManager implements Runnable{
-    private static final Logger logger = LoggerFactory.getLogger(DataNodeManager.class);
+public class HeartbeatManager implements Runnable{
+    private static final Logger logger = LoggerFactory.getLogger(HeartbeatManager.class);
     private final String port;
     private static final Map<String,Channel> channelMap = new ConcurrentHashMap<>();//管理所有连接
 
     private CountDownLatch countDownLatch;
 
 
-    public DataNodeManager(String port, CountDownLatch countDownLatch) {
+    public HeartbeatManager(String port, CountDownLatch countDownLatch) {
         this.port = port;
         this.countDownLatch = countDownLatch;
     }
