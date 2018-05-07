@@ -1,6 +1,6 @@
 package cn.mageek.datanode.service;
 
-import cn.mageek.common.res.CronJobFactory;
+import cn.mageek.datanode.res.CronJobFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 public class CronJobManager implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(CronJobManager.class);
-    private static ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(5);
+    private static ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(2);
 
     private CountDownLatch countDownLatch;
 
@@ -26,11 +26,8 @@ public class CronJobManager implements Runnable {
 
 
     public void run() {
-        scheduledExecutorService.scheduleAtFixedRate(CronJobFactory.getCronJob("CacheToDB"),2,10, TimeUnit.SECONDS);
-//        scheduledExecutorService.scheduleAtFixedRate(new OnlineCount(),5,5, TimeUnit.SECONDS);
-//        scheduledExecutorService.scheduleAtFixedRate(new OnlineCount(),5,3, TimeUnit.SECONDS);
-
-        scheduledExecutorService.scheduleAtFixedRate(CronJobFactory.getCronJob("OnlineCount"),5,24, TimeUnit.HOURS);
+        // 定时向namenode发起心跳
+        scheduledExecutorService.scheduleAtFixedRate(CronJobFactory.getCronJob("Heartbeat"),10,10, TimeUnit.SECONDS);
 
         logger.info("CronJobManager is up now");
         countDownLatch.countDown();

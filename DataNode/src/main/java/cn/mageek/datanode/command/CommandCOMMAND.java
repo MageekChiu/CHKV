@@ -1,27 +1,21 @@
-package cn.mageek.common.command;
+package cn.mageek.datanode.command;
 
+import cn.mageek.common.command.Command;
 import cn.mageek.common.model.DataRequest;
 import cn.mageek.common.model.DataResponse;
-import cn.mageek.common.model.RcvMsgObject;
 import cn.mageek.common.model.WebMsgObject;
-import io.netty.buffer.Unpooled;
-import io.netty.util.CharsetUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.ConcurrentHashMap;
-
 import static cn.mageek.common.model.LineType.INT_NUM;
-import static cn.mageek.common.model.LineType.SINGLE_ERROR;
-import static cn.mageek.common.model.LineType.SINGLE_RIGHT;
 
 /**
  * @author Mageek Chiu
  * @date 2018/5/6 0007:13:49
  */
-public class CommandDEL extends Command {
+public class CommandCOMMAND extends Command {
 
-    private static final Logger logger = LoggerFactory.getLogger(CommandDEL.class);
+    private static final Logger logger = LoggerFactory.getLogger(CommandCOMMAND.class);
 
     @Override
     public DataResponse receive(DataRequest dataRequest) {

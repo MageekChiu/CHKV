@@ -1,7 +1,6 @@
 package cn.mageek.datanode.handler;
 
 import cn.mageek.common.model.DataResponse;
-import cn.mageek.common.model.RcvMsgObject;
 import cn.mageek.common.util.Encoder;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -22,7 +21,7 @@ public class SendMsgHandler extends ChannelOutboundHandlerAdapter {
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         DataResponse dataResponse = (DataResponse)msg;
-        ByteBuf buf = Encoder.objectToBytes(dataResponse);//把消息对象dataResponse转换为buffer
+        ByteBuf buf = Encoder.dataResponseToBytes(dataResponse);//把消息对象dataResponse转换为buffer
         logger.debug("sendMsg: {} to {}",dataResponse,ctx.channel().remoteAddress());
         ctx.writeAndFlush(buf);
         promise.setSuccess();

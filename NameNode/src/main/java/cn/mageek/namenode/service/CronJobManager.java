@@ -1,13 +1,10 @@
 package cn.mageek.namenode.service;
 
-import cn.mageek.common.res.CronJobFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author Mageek Chiu
@@ -26,11 +23,6 @@ public class CronJobManager implements Runnable {
 
 
     public void run() {
-        scheduledExecutorService.scheduleAtFixedRate(CronJobFactory.getCronJob("CacheToDB"),2,10, TimeUnit.SECONDS);
-//        scheduledExecutorService.scheduleAtFixedRate(new OnlineCount(),5,5, TimeUnit.SECONDS);
-//        scheduledExecutorService.scheduleAtFixedRate(new OnlineCount(),5,3, TimeUnit.SECONDS);
-
-        scheduledExecutorService.scheduleAtFixedRate(CronJobFactory.getCronJob("OnlineCount"),5,24, TimeUnit.HOURS);
 
         logger.info("CronJobManager is up now");
         countDownLatch.countDown();

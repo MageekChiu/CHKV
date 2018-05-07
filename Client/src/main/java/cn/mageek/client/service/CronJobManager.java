@@ -1,6 +1,6 @@
 package cn.mageek.client.service;
 
-import cn.mageek.common.res.CronJobFactory;
+import cn.mageek.datanode.res.CronJobFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

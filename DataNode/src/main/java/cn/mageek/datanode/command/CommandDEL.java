@@ -1,5 +1,6 @@
-package cn.mageek.common.command;
+package cn.mageek.datanode.command;
 
+import cn.mageek.common.command.Command;
 import cn.mageek.common.model.DataRequest;
 import cn.mageek.common.model.DataResponse;
 import cn.mageek.common.model.WebMsgObject;
@@ -12,9 +13,9 @@ import static cn.mageek.common.model.LineType.INT_NUM;
  * @author Mageek Chiu
  * @date 2018/5/6 0007:13:49
  */
-public class CommandCOMMAND extends Command {
+public class CommandDEL extends Command {
 
-    private static final Logger logger = LoggerFactory.getLogger(CommandCOMMAND.class);
+    private static final Logger logger = LoggerFactory.getLogger(CommandDEL.class);
 
     @Override
     public DataResponse receive(DataRequest dataRequest) {

@@ -10,7 +10,7 @@ import io.netty.util.CharsetUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.charset.Charset;
+import java.util.List;
 
 /**
  * server收到的buffer转换为消息对象
@@ -29,8 +29,8 @@ public class RcvMsgHandler extends ChannelInboundHandlerAdapter {
         try {
 //            logger.info("receive ByteBuf: {} ,from: {}",ByteBufUtil.hexDump(buf),ctx.channel().remoteAddress());
             logger.info("receive String: {} ,from: {}",buf.toString(CharsetUtil.UTF_8),ctx.channel().remoteAddress());
-            DataRequest dataRequest = Decoder.bytesToObject(buf);
-            ctx.fireChannelRead(dataRequest);
+            List<DataRequest> dataRequestList = Decoder.bytesToDataRequests(buf);
+            dataRequestList.forEach(ctx::fireChannelRead);// 多个命令多次次传输给下一个handler
         }catch (Exception e){
             logger.error("parse data :{} , from: {} , error: ", ByteBufUtil.hexDump(buf),ctx.channel().remoteAddress(),e);
         }finally {

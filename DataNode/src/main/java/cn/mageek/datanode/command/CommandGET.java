@@ -1,11 +1,11 @@
-package cn.mageek.common.command;
+package cn.mageek.datanode.command;
 
+import cn.mageek.common.command.Command;
 import cn.mageek.common.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static cn.mageek.common.model.LineType.NEXT_LEN;
-import static cn.mageek.common.model.LineType.SINGLE_ERROR;
 
 
 /**

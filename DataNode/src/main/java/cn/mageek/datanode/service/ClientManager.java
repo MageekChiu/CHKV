@@ -2,21 +2,20 @@ package cn.mageek.datanode.service;
 
 import cn.mageek.datanode.handler.*;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.codec.DelimiterBasedFrameDecoder;
-import io.netty.handler.codec.LineBasedFrameDecoder;
-import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import io.netty.util.concurrent.EventExecutorGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
@@ -27,13 +26,24 @@ import java.util.concurrent.CountDownLatch;
  */
 public class ClientManager implements Runnable{
     private static final Logger logger = LoggerFactory.getLogger(ClientManager.class);
-    private final String port;
+    private static String clientPort;
     private static final Map<String,Channel> channelMap = new ConcurrentHashMap<>();//管理所有客户端连接
 
     private CountDownLatch countDownLatch;
 
-    public ClientManager(String port, CountDownLatch countDownLatch) {
-        this.port = port;
+    static {
+        try( InputStream in = ClassLoader.class.getResourceAsStream("/app.properties")) {
+            // 读取TCP配置
+            Properties pop = new Properties();
+            pop.load(in);
+            clientPort = pop.getProperty("datanode.client.port");// 对客户端开放的端口
+            logger.debug("config clientPort:{}", clientPort);
+        } catch (IOException e) {
+            logger.error("read config error",e);
+        }
+    }
+
+    public ClientManager( CountDownLatch countDownLatch) {
         this.countDownLatch = countDownLatch;
     }
 
@@ -46,7 +56,7 @@ public class ClientManager implements Runnable{
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup)
                     .channel(NioServerSocketChannel.class) //   新建一个channel
-                    .option(ChannelOption.SO_BACKLOG, 64)//最大等待连接
+                    .option(ChannelOption.SO_BACKLOG, 512)//最大等待连接
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         public void initChannel(SocketChannel ch) throws Exception {
@@ -68,7 +78,7 @@ public class ClientManager implements Runnable{
                     });
 
             // Start the server. 采用同步等待的方式
-            ChannelFuture f = b.bind(Integer.parseInt(port)).sync();
+            ChannelFuture f = b.bind(Integer.parseInt(clientPort)).sync();
             logger.info("ClientManager is up now and listens on {}", f.channel().localAddress());
             countDownLatch.countDown();
 

@@ -2,7 +2,6 @@ package cn.mageek.datanode.handler;
 
 import cn.mageek.common.command.Command;
 import cn.mageek.common.model.DataResponse;
-import cn.mageek.common.model.RcvMsgObject;
 import cn.mageek.common.model.WebMsgObject;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;

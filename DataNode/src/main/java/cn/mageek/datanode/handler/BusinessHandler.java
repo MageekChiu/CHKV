@@ -2,7 +2,7 @@ package cn.mageek.datanode.handler;
 
 import cn.mageek.common.model.DataRequest;
 import cn.mageek.common.model.DataResponse;
-import cn.mageek.common.res.CommandFactory;
+import cn.mageek.datanode.res.CommandFactory;
 import cn.mageek.common.command.Command;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;

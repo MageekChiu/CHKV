@@ -1,6 +1,5 @@
 package cn.mageek.namenode.service;
 
-import cn.mageek.datanode.handler.*;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -16,9 +15,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
 /**
- * 监听和接受连接请求，亦即创建channel并配置消息处理的handler
+ * 管理所有client
  * @author Mageek Chiu
- * @date 2018/3/7 0007:20:18
+ * @date 2018/5/7 0007:20:18
  */
 public class ClientManager implements Runnable{
     private static final Logger logger = LoggerFactory.getLogger(ClientManager.class);
@@ -42,7 +41,7 @@ public class ClientManager implements Runnable{
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup)
                     .channel(NioServerSocketChannel.class)//新建一个channel
-                    .option(ChannelOption.SO_BACKLOG, 128)//最大等待连接
+                    .option(ChannelOption.SO_BACKLOG, 512)//最大等待连接
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         public void initChannel(SocketChannel ch) throws Exception {
@@ -51,11 +50,6 @@ public class ClientManager implements Runnable{
                             // out 执行顺序为注册顺序的逆序
                             // in 执行顺序为注册顺序
                             p.addLast("ReadTimeoutHandler",new ReadTimeoutHandler(600));// in // 多少秒超时
-                            p.addLast("SendMsgHandler",new SendMsgHandler());// out //发送消息编码
-                            p.addLast("ClientHandler",new ClientHandler(channelMap));// in //连接管理
-                            p.addLast("RcvMsgHandler",new RcvMsgHandler());// in //解码消息
-                            p.addLast(businessGroup,"BusinessHandler",new BusinessHandler());// in //解析业务数据
-                            p.addLast(businessGroup,"PushMsgHandler",new PushMsgHandler());// out //合成推送消息
 //                            p.addLast("OtherHandler",new OtherHandler());// in  // 纯粹是为了占位，把PushMsgHandler防止BusinessHandler下面。注释掉也没事，in 结尾 是扯淡，看源码，netty会自己找第一个
 
                         }

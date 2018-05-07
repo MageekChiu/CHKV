@@ -2,19 +2,16 @@ package cn.mageek.common.command;
 
 import cn.mageek.common.model.DataRequest;
 import cn.mageek.common.model.DataResponse;
-import cn.mageek.common.model.RcvMsgObject;
 import cn.mageek.common.model.WebMsgObject;
-import cn.mageek.common.res.CommandFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 抽象策略类
+ * 抽象命令类，处理不同的请求类型
  * @author Mageek Chiu
- * @date 2018/3/7 0007:19:27
+ * @date 2018/5/6 0007:16:27
  */
 public abstract class Command {
 

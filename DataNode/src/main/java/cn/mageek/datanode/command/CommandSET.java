@@ -1,12 +1,9 @@
-package cn.mageek.common.command;
+package cn.mageek.datanode.command;
 
+import cn.mageek.common.command.Command;
 import cn.mageek.common.model.*;
-import io.netty.buffer.Unpooled;
-import io.netty.util.CharsetUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 具体策略类

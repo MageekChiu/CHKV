@@ -1,7 +1,7 @@
 package cn.mageek.client.main;
 
-import cn.mageek.common.res.CommandFactory;
-import cn.mageek.common.res.CronJobFactory;
+import cn.mageek.datanode.res.CommandFactory;
+import cn.mageek.datanode.res.CronJobFactory;
 import cn.mageek.client.service.ClientManager;
 import cn.mageek.client.service.CronJobManager;
 import cn.mageek.client.service.WebJobManager;

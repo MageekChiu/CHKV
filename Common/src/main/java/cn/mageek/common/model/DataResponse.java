@@ -1,6 +1,7 @@
 package cn.mageek.common.model;
 
 /**
+ * 客户端获得数据
  * @author Mageek Chiu
  * @date 2018/5/6 0006:13:28
  */
