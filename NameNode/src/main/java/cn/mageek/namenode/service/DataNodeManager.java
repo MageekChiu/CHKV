@@ -17,8 +17,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
 import java.util.Properties;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CountDownLatch;
+
+import static cn.mageek.common.util.PropertyLoader.load;
 
 /**
  * 管理所有dataNode
@@ -28,23 +33,28 @@ import java.util.concurrent.CountDownLatch;
 public class DataNodeManager implements Runnable{
     private static final Logger logger = LoggerFactory.getLogger(DataNodeManager.class);
     private static String dataNodePort;
-    private static final Map<String,Channel> channelMap = new ConcurrentHashMap<>();//管理所有datanode
+    private Map<String,Channel> dataNodeMap;//管理所有datanode
+    private Map<String,String> dataNodeClientMap ;//管理所有datanode 对client开放的IP与端口
+    private ConcurrentSkipListMap<Integer, String> sortedServerMap ;//管理所有datanode 对应 hash 和 ip:port
 
-    private CountDownLatch countDownLatch;
+    private CountDownLatch countDownLatch;//
 
     static {
         try( InputStream in = ClassLoader.class.getResourceAsStream("/app.properties")) {
             Properties pop = new Properties();
             pop.load(in);
-            dataNodePort = pop.getProperty("namenode.datanode.port");// 对dataNode开放的端口
+            dataNodePort = load(pop,"namenode.datanode.port");// 对dataNode开放的端口
             logger.debug("config dataNodePort:{}", dataNodePort);
         } catch (IOException e) {
             logger.error("read config error",e);
         }
     }
 
-    public DataNodeManager(CountDownLatch countDownLatch) {
+    public DataNodeManager(Map<String,Channel> dataNodeMap, Map<String,String> dataNodeClientMap , ConcurrentSkipListMap<Integer, String> sortedServerMap, CountDownLatch countDownLatch) {
+        this.dataNodeMap = dataNodeMap;
+        this.dataNodeClientMap = dataNodeClientMap;
         this.countDownLatch = countDownLatch;
+        this.sortedServerMap = sortedServerMap;
     }
 
     public void run() {
@@ -61,24 +71,24 @@ public class DataNodeManager implements Runnable{
                         @Override
                         public void initChannel(SocketChannel ch) throws Exception {
                             ChannelPipeline p = ch.pipeline();
-                            p.addLast("ReadTimeoutHandler",new ReadTimeoutHandler(40));// in // 多少秒超时
-                            ch.pipeline().addLast(new ObjectDecoder(2048, ClassResolvers.cacheDisabled(this.getClass().getClassLoader())));// in 进制缓存类加载器
-                            ch.pipeline().addLast(new ObjectEncoder());// out
-                            ch.pipeline().addLast(new HeartBeatHandler(channelMap));// in
+                            p.addLast("ReadTimeoutHandler",new ReadTimeoutHandler(31));// in // 多少秒超时
+                            p.addLast(new ObjectDecoder(2048, ClassResolvers.cacheDisabled(this.getClass().getClassLoader())));// in 禁止缓存类加载器
+                            p.addLast(new ObjectEncoder());// out
+                            p.addLast(new HeartBeatHandler(dataNodeMap,dataNodeClientMap,sortedServerMap));// in
                         }
                     });
 
             // Start the server. 采用同步等待的方式
             ChannelFuture f = b.bind(Integer.parseInt(dataNodePort)).sync();
-            logger.info("ClientManager is up now and listens on {}", f.channel().localAddress());
+            logger.info("DataNodeManager is up now and listens on {}", f.channel().localAddress());
             countDownLatch.countDown();
 
             // Wait until the server socket is closed.
             f.channel().closeFuture().sync();
-            logger.info("ClientManager is down");
+            logger.info("DataNodeManager is down");
 
         } catch (InterruptedException e) {
-            logger.error("ClientManager start error: ", e);
+            logger.error("DataNodeManager start error: ", e);
         } finally {
             workerGroup.shutdownGracefully();
             bossGroup.shutdownGracefully();

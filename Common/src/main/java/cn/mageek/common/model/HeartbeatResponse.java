@@ -9,8 +9,8 @@ import java.io.Serializable;
  */
 public class HeartbeatResponse implements Serializable {
 
-    private boolean ok ; // 相应状态
-    private int dataNodeNumber ;// datanode数量
+    private boolean ok ; // 是否依然运行
+    private int dataNodeNumber ;// dataNode数量
     private String IPPort ; // 若不为 null 则需要转移数据到另一个节点，迁移方式采用与客户端相同的做法，但是一次打包多个数据，减小网络传输次数
 
     public HeartbeatResponse(boolean ok, int dataNodeNumber, String IPPort) {
@@ -45,6 +45,6 @@ public class HeartbeatResponse implements Serializable {
 
     @Override
     public String toString() {
-        return "HeartbeatResponse -- ok:"+ok+",dataNodeNumber :"+dataNodeNumber+",IPPort"+IPPort;
+        return "HeartbeatResponse -- ok:"+ok+",dataNodeNumber :"+dataNodeNumber+",IPPort:"+IPPort;
     }
 }

@@ -19,8 +19,10 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
+import static cn.mageek.common.util.PropertyLoader.load;
+
 /**
- * 监听和接受连接请求，亦即创建channel并配置消息处理的handler
+ * 管理来自client或者其他DataNode的数据请求
  * @author Mageek Chiu
  * @date 2018/5/5 0007:20:18
  */
@@ -33,10 +35,9 @@ public class ClientManager implements Runnable{
 
     static {
         try( InputStream in = ClassLoader.class.getResourceAsStream("/app.properties")) {
-            // 读取TCP配置
             Properties pop = new Properties();
             pop.load(in);
-            clientPort = pop.getProperty("datanode.client.port");// 对客户端开放的端口
+            clientPort = load(pop,"datanode.client.port"); //dataNode对client开放的端口
             logger.debug("config clientPort:{}", clientPort);
         } catch (IOException e) {
             logger.error("read config error",e);

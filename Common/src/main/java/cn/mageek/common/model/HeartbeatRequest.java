@@ -9,13 +9,20 @@ import java.io.Serializable;
  */
 public class HeartbeatRequest implements Serializable {
 
-    private String IPPort;// DataNode自己对客户端开放的的 IP:Port，节点之间迁移数据时
+    private String IPPort;// DataNode自己对客户端开放的的 IP:Port，节点之间迁移数据时可以复用
+    private String status;// HeartbeatType ONLINE,OFFLINE,RUNNING
     private long memoryAvailable;// DataNode自己内存剩余，单位 Byte
 
-    public HeartbeatRequest(String IPPort, long memoryAvailable) {
+    public HeartbeatRequest(String IPPort, String status, long memoryAvailable) {
         this.IPPort = IPPort;
+        this.status = status;
         this.memoryAvailable = memoryAvailable;
     }
+
+//    public HeartbeatRequest(String IPPort, long memoryAvailable) {
+//        this.IPPort = IPPort;
+//        this.memoryAvailable = memoryAvailable;
+//    }
 
     public String getIPPort() {
         return IPPort;
@@ -31,6 +38,14 @@ public class HeartbeatRequest implements Serializable {
 
     public void setMemoryAvailable(long memoryAvailable) {
         this.memoryAvailable = memoryAvailable;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 
     @Override

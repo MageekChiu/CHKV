@@ -1,6 +1,7 @@
 package cn.mageek.common.util;
 
 import cn.mageek.common.model.DataRequest;
+import cn.mageek.common.model.DataResponse;
 import cn.mageek.common.model.HeartbeatRequest;
 import cn.mageek.common.model.HeartbeatResponse;
 import io.netty.buffer.ByteBuf;
@@ -73,12 +74,26 @@ public class Decoder {
     }
 
     /**
+     * 将接收到的bit数据解析为消息对象DataRequest的列表，是redis协议的子集
+     * @param in 输入buffer
+     * @return DataRequest
+     */
+    public static List<DataResponse> bytesToDataResponse(ByteBuf in) throws Exception{
+
+        if (in.readableBytes()<MINIMAL_LENGTH){
+            throw new EncoderException("less than MINIMAL_LENGTH");
+        }
+        List<DataResponse> list = new LinkedList<>();
+        return list;
+    }
+
+    /**
      * 将接收到的bit数据解析为消息对象HeartbeatRequest
      * @param in 输入buffer
      * @return DataRequest
      */
     public static HeartbeatRequest bytesToHeartbeatRequest(ByteBuf in) throws Exception{
-        return new HeartbeatRequest("", 10000000L);
+        return new HeartbeatRequest("","", 10000000L);
     }
     /**
      * 将接收到的bit数据解析为消息对象HeartbeatResponse

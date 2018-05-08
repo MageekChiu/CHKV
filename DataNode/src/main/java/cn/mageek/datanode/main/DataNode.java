@@ -20,7 +20,8 @@ import java.util.concurrent.CountDownLatch;
 public class DataNode {
 
     private static final Logger logger = LoggerFactory.getLogger(DataNode.class);
-    private static volatile Map<String,String> DATA_POOL ;//实际数据存储
+    //实际数据存储，ConcurrentHashMap 访问效率高于 ConcurrentSkipListMap，但是转移数据时就需要遍历了，考虑到转移数据情况并不多，所以就不用ConcurrentSkipListMap
+    private static volatile Map<String,String> DATA_POOL = new ConcurrentHashMap<>(1024) ;
 
     public static void main(String[] args){
         Thread.currentThread().setName("DataNode");
@@ -28,13 +29,12 @@ public class DataNode {
         int jobNumber = 2;
         try{
             // 初始化命令对象
-            DATA_POOL = new ConcurrentHashMap<>(1024);
 //            DATA_POOL.put("clientPort",clientPort);// 有了这一句下面才是DATA_POOL:1132277150,1。否则就是 DATA_POOL:0,0
 //            logger.debug("DATA_POOL:{},{}",DATA_POOL.hashCode(),DATA_POOL.size());
             CommandFactory.construct(DATA_POOL);// 所有command都是单例对象，共享这一个数据池（ConcurrentHashMap）
 
             // 初始化定时任务对象
-            CronJobFactory.construct();
+            CronJobFactory.construct(DATA_POOL);// 定时任务也可能用到数据池
 
             CountDownLatch countDownLatch = new CountDownLatch(jobNumber);
             // n 个线程分别启动 n 个服务

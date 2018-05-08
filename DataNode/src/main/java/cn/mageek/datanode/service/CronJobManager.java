@@ -1,5 +1,6 @@
 package cn.mageek.datanode.service;
 
+import cn.mageek.datanode.cron.Heartbeat;
 import cn.mageek.datanode.res.CronJobFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +28,7 @@ public class CronJobManager implements Runnable {
 
     public void run() {
         // 定时向namenode发起心跳
-        scheduledExecutorService.scheduleAtFixedRate(CronJobFactory.getCronJob("Heartbeat"),10,10, TimeUnit.SECONDS);
+        scheduledExecutorService.scheduleAtFixedRate( CronJobFactory.getCronJob("Heartbeat"),2,10, TimeUnit.SECONDS);
 
         logger.info("CronJobManager is up now");
         countDownLatch.countDown();

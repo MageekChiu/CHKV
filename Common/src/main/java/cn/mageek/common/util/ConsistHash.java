@@ -1,9 +1,13 @@
-package cn.mageek.namenode.controller;
+package cn.mageek.common.util;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Iterator;
+import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 /**
  * @author Mageek Chiu
@@ -12,33 +16,41 @@ import java.util.TreeMap;
 public class ConsistHash {
     private static final Logger logger = LoggerFactory.getLogger(ConsistHash.class);
 
-    //待添加入Hash环的服务器列表
-    private static String[] servers = { "192.168.0.0:113", "192.168.0.0:121","192.168.0.1:131", "192.168.0.1:112", "192.168.0.1:116" };
+    //key表示服务器的hash值，value表示服务器 ip:port
+    private ConcurrentSkipListMap<Integer, String> sortedServerMap;
 
-    //key表示服务器的hash值，value表示服务器
-    private static SortedMap<Integer, String> sortedMap = new TreeMap<>();
-
-    //程序初始化，将所有的服务器放入sortedMap中
-    static {
-        for (String server : servers) {
-            int hash = getHash(server);
-            logger.debug("[" + server + "] 加入集合中, 其Hash值为" + hash);
-            sortedMap.put(hash, server);
+    /**
+     * 程序初始化，将所有的服务器放入sortedMap中
+     * @param dataNodeClientMap 待添加入Hash环的服务器
+     */
+    public ConsistHash(ConcurrentSkipListMap<Integer, String> sortedServerMap,Map<String,String> dataNodeClientMap) {
+        this.sortedServerMap = sortedServerMap;
+        for (Map.Entry<String, String> entry : dataNodeClientMap.entrySet()) {
+            String IPPort = entry.getValue();
+            int hash = getHash(IPPort);
+//            logger.debug("{} 入环, Hash {}",IPPort,hash);
+            // 维护集合
+            sortedServerMap.put(hash,IPPort);
         }
-        System.out.println();
     }
 
-    //得到应当路由到的结点
-    private static String getServer(String key) {
+    /**
+     * 得到数据根据key应当路由到的server结点,也就是 >= hash(key) 的server
+     * 如果是server节点，就要不能包含，防止找到本身
+     * @param key data的key 或者 server 的 ip:port
+     * @param isServer  是server还是data
+     * @return 服务器节点
+     */
+    public String getServer(String key, boolean isServer) {
         //得到该key的hash值
-        int hash = getHash(key);
-        //得到大于该Hash值的所有Map
-        SortedMap<Integer, String> subMap = sortedMap.tailMap(hash);
+        int keyHash = getHash(key);
+        //得到 >= 该Hash值的所有节点构成的子map
+        SortedMap<Integer, String> subMap = sortedServerMap.tailMap(keyHash,!isServer);// submap中所有节点的hash值 >= keyHash 是server就不包含，不是server是data就包含
         if(subMap.isEmpty()){
             //如果没有比该key的hash值大的，则从第一个node开始
-            Integer i = sortedMap.firstKey();
+            Integer i = sortedServerMap.firstKey();
             //返回对应的服务器
-            return sortedMap.get(i);
+            return sortedServerMap.get(i);
         }else{
             //第一个Key就是顺时针过去离node最近的那个结点
             Integer i = subMap.firstKey();
@@ -47,8 +59,14 @@ public class ConsistHash {
         }
     }
 
-    //使用FNV1_32_HASH算法计算服务器的Hash值
-    private static int getHash(String str) {
+
+
+    /**
+     * 使用FNV1_32_HASH算法计算字符串的Hash值
+     * @param str 服务器 ip:port 或者数据的 key
+     * @return hash 值
+     */
+    public static int getHash(String str) {
         final int p = 16777619;
         int hash = (int) 2166136261L;
         for (int i = 0; i < str.length(); i++)
@@ -58,19 +76,12 @@ public class ConsistHash {
         hash += hash << 3;
         hash ^= hash >> 17;
         hash += hash << 5;
-
         // 如果算出来的值为负数则取其绝对值
         if (hash < 0)
             hash = Math.abs(hash);
         return hash;
     }
 
-    public static void main(String[] args) {
-        String[] keys = {"redis", "memcached", "neo4j","MongoDB"};
-        for (String key : keys)
-            logger.debug ("[" + key + "]的hash值为" + getHash(key)
-                    + ", 被路由到结点[" + getServer(key) + "]");
-    }
 }
 
 //public class ConsistentHashingWithVirtualNode {
