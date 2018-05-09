@@ -65,12 +65,16 @@ public class HeartBeatHandler extends ChannelInboundHandlerAdapter {
                 dataTransfer = (DataTransfer) JobFactory.getJob("DataTransfer");
                 dataTransfer.connect(response.getIPPort(),false);
             }else{
-                logger.debug("DataNode 不需要转移数据");
+                logger.debug("DataNode不需要转移数据");
             }
         }else{
-            logger.info("DataNode 不再运行，数据全部迁移给下一个节点");
-            dataTransfer = (DataTransfer) JobFactory.getJob("DataTransfer");
-            dataTransfer.connect(response.getIPPort(),true);
+            if (response.getIPPort()!=null){
+                logger.info("DataNode 不再运行，数据全部迁移给下一个节点");
+                dataTransfer = (DataTransfer) JobFactory.getJob("DataTransfer");
+                dataTransfer.connect(response.getIPPort(),true);
+            }else{
+                logger.debug("DataNode 最后一台下线，不需要转移数据");
+            }
         }
 
         if(dataTransfer != null){

@@ -36,7 +36,7 @@ public class DataTransfer extends DataRunnable{
     public void run(){
         EventLoopGroup group = new NioEventLoopGroup();
         Bootstrap b = new Bootstrap();
-        EventExecutorGroup businessGroup = new DefaultEventExecutorGroup(4);//处理耗时业务逻辑，我实际上为了统一起见把全部业务逻辑都放这里面了
+        EventExecutorGroup businessGroup = new DefaultEventExecutorGroup(1);//处理耗时业务逻辑，不占用IO线程
         b.group(group)
                 .channel(NioSocketChannel.class)
                 .remoteAddress(new InetSocketAddress(dataNodeIP, Integer.parseInt(dataNodePort)))

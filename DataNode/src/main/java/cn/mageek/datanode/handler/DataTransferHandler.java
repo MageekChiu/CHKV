@@ -3,6 +3,7 @@ package cn.mageek.datanode.handler;
 import cn.mageek.common.model.DataRequest;
 import cn.mageek.common.model.DataResponse;
 import cn.mageek.common.model.HeartbeatResponse;
+import cn.mageek.common.model.LineType;
 import cn.mageek.common.util.Decoder;
 import cn.mageek.common.util.Encoder;
 import io.netty.buffer.ByteBuf;
@@ -15,6 +16,7 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static cn.mageek.common.res.Constants.pageSize;
 import static cn.mageek.common.util.ConsistHash.getHash;
@@ -31,6 +33,7 @@ public class DataTransferHandler  extends ChannelInboundHandlerAdapter {
     private Map<String,String> DATA_POOL ;// 数据存储池
     private boolean isAll;
     private String dataNodeIPPort;
+//    private AtomicInteger okNumber;
 
 
     public DataTransferHandler(String dataNodeIPPort,Map<String, String> DATA_POOL,boolean isAll) {
@@ -41,6 +44,7 @@ public class DataTransferHandler  extends ChannelInboundHandlerAdapter {
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         logger.info("opened connection to: {}",ctx.channel().remoteAddress());
+//        okNumber = new AtomicInteger(0);// 置零
         dataTransfer(ctx.channel());// 连接成功就开始转移数据
     }
 
@@ -55,6 +59,7 @@ public class DataTransferHandler  extends ChannelInboundHandlerAdapter {
 //        logger.debug("DataNode DataTransferHandler received buffer: {}",in.toString(CharsetUtil.UTF_8));// 是一条一条的，没有粘在一起,但是是几乎同时出现的
         DataResponse response = Decoder.bytesToDataResponse(in);
         logger.debug("DataNode DataTransferHandler received : {}",response);
+
         in.release();
     }
 
@@ -71,6 +76,7 @@ public class DataTransferHandler  extends ChannelInboundHandlerAdapter {
         if (isAll){// 转移全部数据给下一个节点
             DATA_POOL.forEach((k,v)->{
                 requests.add(new DataRequest(SET,k,v));
+//                okNumber.incrementAndGet();
             });
             DATA_POOL = null;//释放
         }else {// 转移部分数据给上一个节点
@@ -79,12 +85,14 @@ public class DataTransferHandler  extends ChannelInboundHandlerAdapter {
                 int keyHash = getHash(k);
                 if (keyHash <= serverhash){// 需要转移
                     requests.add(new DataRequest(SET,k,v));
+//                    okNumber.incrementAndGet();
                 }
             });
         }
 
         int listSize = requests.size();
         int transTime = (int) Math.ceil(listSize/pageSize);// 转移次数
+        AtomicInteger ok = new AtomicInteger(transTime) ;
         logger.debug("all data:{}, transfer data :{},pageSize:{},transfer time: {}",DATA_POOL.size(),listSize,pageSize,transTime);
         for (int i = 0 ; i < transTime;i++){
             List<DataRequest> requests1 = new ArrayList<>((int) pageSize);
@@ -105,7 +113,16 @@ public class DataTransferHandler  extends ChannelInboundHandlerAdapter {
             int num = buf.readableBytes();
             ChannelFuture f = channel.writeAndFlush(buf);
             f.addListener((ChannelFutureListener) channelFuture -> {
-                logger.debug("sent buf length:{}",num);
+                logger.debug("successfully sent buf length:{}",num);
+                if(ok.decrementAndGet() == 0){// 尽力而为即可，不去校验转移的正确性，若要校验就得去全部的response中一个一个查看，有error就重发，超时没有回复完毕就只能全部重发，因为对不上，不知道那个对错
+                    logger.info("dataTransfer completed");
+                    Thread.sleep(5000);// 等待完成通信
+                    if (isAll){
+                        DATA_POOL = null ; //可以下线了，整个DataNode下线
+                    }else {
+                        channel.close();//断开连接就好,dataTransfer自然结束
+                    }
+                }
             });
         }
 

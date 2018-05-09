@@ -35,7 +35,6 @@ public class Heartbeat extends DataRunnable{
     private static String clientPort;
     private static String clientIP;
 
-
     private static ChannelFuture f;
 
     static { // 读取配置
@@ -107,7 +106,7 @@ public class Heartbeat extends DataRunnable{
      * 发送不同状态的心跳
      * @param status 状态
      */
-    private void run1(String status){
+    public void run1(String status){
         long memoryAvailable = Runtime.getRuntime().freeMemory();
         HeartbeatRequest request = new HeartbeatRequest(clientIP+":"+clientPort,status,memoryAvailable);
         logger.debug("DataNode sent: " + request);

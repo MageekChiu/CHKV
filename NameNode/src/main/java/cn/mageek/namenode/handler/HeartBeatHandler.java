@@ -87,7 +87,7 @@ public class HeartBeatHandler extends ChannelInboundHandlerAdapter {
                      if (v.equals(nextIPPort)) nextConnection.set(k);
                  });
                 logger.debug("{} ONLINE, nextIPPort {}, nextConnection {}",IPPort,nextIPPort,nextConnection.get());
-                if (IPPort.equals(nextIPPort)){
+                if (IPPort.equals(nextIPPort)){// 是第一台上线
                     logger.info("only 1 dataNode {}, Skip the procedure",IPPort);
                     response = new HeartbeatResponse(true, dataNodeClientMap.size(),null);//connection依然运行，不需要转移数据
                     break;
@@ -104,6 +104,11 @@ public class HeartBeatHandler extends ChannelInboundHandlerAdapter {
                  IPPort = dataNodeClientMap.get(connection);
                  nextIPPort = hash.getServer(IPPort,true);
                 logger.debug("{} OFFLINE, nextIPPort {}",IPPort,nextIPPort);
+                if (IPPort.equals(nextIPPort)){// 是最后一台下线
+                    logger.info("only 1 dataNode {}, Skip the procedure",IPPort);
+                    response = new HeartbeatResponse(false, dataNodeClientMap.size(),null);/// connection不再运行，不需要转移数据
+                    break;
+                }
                 response = new HeartbeatResponse(false, dataNodeClientMap.size(),nextIPPort);// connection不再运行，全部数据转移给nextConnection
                  break;
             case RUNNING : // 在线，无变化

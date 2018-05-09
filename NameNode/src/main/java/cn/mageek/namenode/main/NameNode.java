@@ -8,6 +8,8 @@ import cn.mageek.namenode.service.DataNodeManager;
 import io.netty.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.lang.management.ManagementFactory;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -49,7 +51,7 @@ public class NameNode {
 //            clientManager = new Thread(new ClientManager(dataNodeMap,clientMap,countDownLatch),"ClientManager");clientManager.start();
             cronJobManager = new Thread(new CronJobManager(countDownLatch),"CronJobManager");cronJobManager.start();
             countDownLatch.await();//等待其他几个线程完全启动，然后才能对外提供服务
-            logger.info("NameNode is fully up now");
+            logger.info("NameNode is fully up now, pid:{}",ManagementFactory.getRuntimeMXBean().getName());
         }catch(Exception ex) {
             logger.error("server start error:",ex);//log4j能直接渲染stack trace
             CommandFactory.destruct();
