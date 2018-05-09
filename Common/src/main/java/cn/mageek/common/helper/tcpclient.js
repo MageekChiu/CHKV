@@ -20,12 +20,43 @@ client.connect(PORT, HOST, function() {
     // client.write( msg );
     //
 
-    // set 多个命令
+    // set 多个命令，一次发六条收到消息就会粘包
+    // 收到消息: +OK<br>
+    // 收到消息: +OK<br>+OK<br>+OK<br>+OK<br>+OK<br>
+
     var msg = "*3\r\n" +
         "$3\r\n" +
         "SET\r\n" +
         "$2\r\n" +
         "sm\r\n" +
+        "$3\r\n" +
+        "gem\r\n\t\n"+
+        "*3\r\n" +
+        "$3\r\n" +
+        "SET\r\n" +
+        "$2\r\n" +
+        "sf\r\n" +
+        "$3\r\n" +
+        "gem\r\n\t\n"+
+        "*3\r\n" +
+        "$3\r\n" +
+        "SET\r\n" +
+        "$2\r\n" +
+        "rm\r\n" +
+        "$3\r\n" +
+        "gem\r\n\t\n"+
+        "*3\r\n" +
+        "$3\r\n" +
+        "SET\r\n" +
+        "$2\r\n" +
+        "tm\r\n" +
+        "$3\r\n" +
+        "gem\r\n\t\n"+
+        "*3\r\n" +
+        "$3\r\n" +
+        "SET\r\n" +
+        "$2\r\n" +
+        "sw\r\n" +
         "$3\r\n" +
         "gem\r\n\t\n"+
         "*3\r\n" +
@@ -39,49 +70,49 @@ client.connect(PORT, HOST, function() {
     client.write( msg );
 
 
-    // get 存在
-    setTimeout(function () {
-        msg = "*2\r\n" +
-            "$3\r\n" +
-            "GET\r\n" +
-            "$2\r\n" +
-            "sm\r\n";
-        console.log("发送"+msg);
-        client.write(msg);
-    },1500);
-
-    // get 不存在
-    setTimeout(function () {
-        msg = "*2\r\n" +
-            "$3\r\n" +
-            "GET\r\n" +
-            "$2\r\n" +
-            "em\r\n";
-        console.log("发送"+msg);
-        client.write(msg);
-    },2300);
-
-    // del 存在
-    setTimeout(function () {
-        msg = "*2\r\n" +
-            "$3\r\n" +
-            "del\r\n" +
-            "$2\r\n" +
-            "sm\r\n";
-        console.log("发送"+msg);
-        client.write(msg);
-    },3200);
-
-    // del 不存在
-    setTimeout(function () {
-        msg = "*2\r\n" +
-            "$3\r\n" +
-            "del\r\n" +
-            "$2\r\n" +
-            "sg\r\n";
-        console.log("发送"+msg);
-        client.write(msg);
-    },4200);
+    // // get 存在
+    // setTimeout(function () {
+    //     msg = "*2\r\n" +
+    //         "$3\r\n" +
+    //         "GET\r\n" +
+    //         "$2\r\n" +
+    //         "sm\r\n";
+    //     console.log("发送"+msg);
+    //     client.write(msg);
+    // },1500);
+    //
+    // // get 不存在
+    // setTimeout(function () {
+    //     msg = "*2\r\n" +
+    //         "$3\r\n" +
+    //         "GET\r\n" +
+    //         "$2\r\n" +
+    //         "em\r\n";
+    //     console.log("发送"+msg);
+    //     client.write(msg);
+    // },2300);
+    //
+    // // del 存在
+    // setTimeout(function () {
+    //     msg = "*2\r\n" +
+    //         "$3\r\n" +
+    //         "del\r\n" +
+    //         "$2\r\n" +
+    //         "sm\r\n";
+    //     console.log("发送"+msg);
+    //     client.write(msg);
+    // },3200);
+    //
+    // // del 不存在
+    // setTimeout(function () {
+    //     msg = "*2\r\n" +
+    //         "$3\r\n" +
+    //         "del\r\n" +
+    //         "$2\r\n" +
+    //         "sg\r\n";
+    //     console.log("发送"+msg);
+    //     client.write(msg);
+    // },4200);
 
     // COMMAND
     // setTimeout(function () {
@@ -100,7 +131,7 @@ client.on('data', function(data) {
     if (data.length>160)
         console.log('收到缩略消息: ' + data.substring(0,160));
     else
-        console.log('收到消息: ' + data);
+        console.log('收到消息: ' + data.replace(/\r\n/g,"<br>"));
     // console.log(data.length)
 });
 

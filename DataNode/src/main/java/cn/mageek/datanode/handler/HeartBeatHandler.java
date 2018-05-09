@@ -1,14 +1,12 @@
 package cn.mageek.datanode.handler;
 
-import cn.mageek.common.model.DataRequest;
 import cn.mageek.common.model.HeartbeatResponse;
+import cn.mageek.datanode.jobs.DataTransfer;
+import cn.mageek.datanode.res.JobFactory;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -60,33 +58,25 @@ public class HeartBeatHandler extends ChannelInboundHandlerAdapter {
     }
 
     private void handleResponse(HeartbeatResponse response){
+        DataTransfer dataTransfer = null;
         if (response.isOk()){// 继续运行
             if (response.getIPPort()!=null){
-                logger.debug("DataNode 需要转移部分数据");
-                dataTransfer(response.getIPPort(),false);
+                logger.info("DataNode 需要转移部分数据给上一个节点");
+                dataTransfer = (DataTransfer) JobFactory.getJob("DataTransfer");
+                dataTransfer.connect(response.getIPPort(),false);
             }else{
                 logger.debug("DataNode 不需要转移数据");
             }
         }else{
-            logger.debug("DataNode 不再运行，数据全部迁移给下一个节点");
-            dataTransfer(response.getIPPort(),true);
+            logger.info("DataNode 不再运行，数据全部迁移给下一个节点");
+            dataTransfer = (DataTransfer) JobFactory.getJob("DataTransfer");
+            dataTransfer.connect(response.getIPPort(),true);
+        }
+
+        if(dataTransfer != null){
+            Thread transfer = new Thread(dataTransfer,"dataTransfer");
+            transfer.start();// 新起一个线程，但是这样可能不稳定，待改进
         }
     }
 
-    /**
-     * 转移数据
-     * @param nextIPPort 转移到目标节点
-     * @param isAll 是否全部转移
-     */
-    private void dataTransfer(String nextIPPort,boolean isAll){
-        List<DataRequest> requests = new LinkedList<>();
-        String SET = "SET";
-        if (isAll){
-            DATA_POOL.forEach((k,v)->{
-                DataRequest request = new DataRequest(SET,k,v);
-            });
-            DATA_POOL = null;//释放
-        }else {
-        }
-    }
 }

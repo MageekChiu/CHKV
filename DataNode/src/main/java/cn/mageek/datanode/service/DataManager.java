@@ -22,12 +22,12 @@ import java.util.concurrent.CountDownLatch;
 import static cn.mageek.common.util.PropertyLoader.load;
 
 /**
- * 管理来自client或者其他DataNode的数据请求
+ * 管理来自client或者其他DataNode的data请求,保持连接
  * @author Mageek Chiu
  * @date 2018/5/5 0007:20:18
  */
-public class ClientManager implements Runnable{
-    private static final Logger logger = LoggerFactory.getLogger(ClientManager.class);
+public class DataManager implements Runnable{
+    private static final Logger logger = LoggerFactory.getLogger(DataManager.class);
     private static String clientPort;
     private static final Map<String,Channel> channelMap = new ConcurrentHashMap<>();//管理所有客户端连接
 
@@ -44,7 +44,7 @@ public class ClientManager implements Runnable{
         }
     }
 
-    public ClientManager( CountDownLatch countDownLatch) {
+    public DataManager(CountDownLatch countDownLatch) {
         this.countDownLatch = countDownLatch;
     }
 
@@ -80,15 +80,15 @@ public class ClientManager implements Runnable{
 
             // Start the server. 采用同步等待的方式
             ChannelFuture f = b.bind(Integer.parseInt(clientPort)).sync();
-            logger.info("ClientManager is up now and listens on {}", f.channel().localAddress());
+            logger.info("DataManager is up now and listens on {}", f.channel().localAddress());
             countDownLatch.countDown();
 
             // Wait until the server socket is closed.
             f.channel().closeFuture().sync();
-            logger.info("ClientManager is down");
+            logger.info("DataManager is down");
 
         } catch (InterruptedException e) {
-            logger.error("ClientManager start error: ", e);
+            logger.error("DataManager start error: ", e);
         } finally {
             workerGroup.shutdownGracefully();
             bossGroup.shutdownGracefully();

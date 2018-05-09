@@ -22,8 +22,8 @@ public class SendMsgHandler extends ChannelOutboundHandlerAdapter {
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         DataResponse dataResponse = (DataResponse)msg;
         ByteBuf buf = Encoder.dataResponseToBytes(dataResponse);//把消息对象dataResponse转换为buffer
-        logger.debug("sendMsg: {} to {}",dataResponse,ctx.channel().remoteAddress());
         ctx.writeAndFlush(buf);
+        logger.debug("sendMsg: {} to {}",dataResponse,ctx.channel().remoteAddress());
         promise.setSuccess();
     }
 

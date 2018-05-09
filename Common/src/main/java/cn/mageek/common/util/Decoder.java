@@ -9,9 +9,10 @@ import io.netty.handler.codec.EncoderException;
 import io.netty.util.CharsetUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.util.LinkedList;
 import java.util.List;
+import static cn.mageek.common.model.LineType.*;
+import static cn.mageek.common.res.Constants.*;
 
 /**
  * 入站数据解码
@@ -42,10 +43,10 @@ public class Decoder {
 
         List<DataRequest> dataRequestList = new LinkedList<>();
 
-        String[] msgs = s.split("\t\n");// 多个命令之间用 \t\n 分割
+        String[] msgs = s.split(outterSplit);// 多个命令之间用 \t\n 分割，一个命令就没有 \t\n   // 这个不属于redis，是我为了自己方便加的
         logger.debug("Decoder 获得 {} 条命令",msgs.length);
         for (String msg : msgs) {
-            String[] strings = msg.split("\r\n");// 单个命令之间用 \r\n 分割
+            String[] strings = msg.split(innerSplit);// 单个命令内部用 \r\n 分割
 //        for (String string : strings) { logger.debug(string); }
 
             int allLineNumber = strings.length;
@@ -55,7 +56,7 @@ public class Decoder {
 
             String command = strings[2].toUpperCase();// 命令全部转大写
             if (Integer.parseInt(strings[1].substring(1)) != command.length()) throw new Exception("command length Exception");
-            if (command.equals("COMMAND")){
+            if (command.equals("COMMAND")){// 没有 key value
                 ((LinkedList<DataRequest>) dataRequestList).addLast(new DataRequest(command,"none","none"));
                 continue;
             }
@@ -74,17 +75,30 @@ public class Decoder {
     }
 
     /**
-     * 将接收到的bit数据解析为消息对象DataRequest的列表，是redis协议的子集
+     * 将接收到的bit数据解析为消息对象DataResponse的列表，是redis协议的子集
      * @param in 输入buffer
      * @return DataRequest
      */
-    public static List<DataResponse> bytesToDataResponse(ByteBuf in) throws Exception{
+    public static DataResponse bytesToDataResponse(ByteBuf in) throws Exception{
 
-        if (in.readableBytes()<MINIMAL_LENGTH){
-            throw new EncoderException("less than MINIMAL_LENGTH");
+        String data = in.toString(CharsetUtil.UTF_8);
+        String lineType = data.substring(0,1);
+        String msg = "";
+        switch (lineType){
+            case SINGLE_RIGHT:
+            case SINGLE_ERROR:
+            case INT_NUM:
+                msg = data.substring(1,data.length()-innerSplit.length());
+                break;
+            case NEXT_LEN:
+                if( msg.length()==(2+innerSplit.length())) msg="-1";// 未找到就直接-1
+                else msg = data.split(innerSplit)[1];
+                break;
+            case LINE_NUM:
+                break;
         }
-        List<DataResponse> list = new LinkedList<>();
-        return list;
+        DataResponse response = new DataResponse(lineType,msg);
+        return response;
     }
 
     /**

@@ -28,7 +28,7 @@ public class RcvMsgHandler extends ChannelInboundHandlerAdapter {
         ByteBuf buf  = (ByteBuf) msg;
         try {
 //            logger.info("receive ByteBuf: {} ,from: {}",ByteBufUtil.hexDump(buf),ctx.channel().remoteAddress());
-            logger.info("receive String: {} ,from: {}",buf.toString(CharsetUtil.UTF_8),ctx.channel().remoteAddress());
+//            logger.info("receive String: {} ,from: {}",buf.toString(CharsetUtil.UTF_8),ctx.channel().remoteAddress());
             List<DataRequest> dataRequestList = Decoder.bytesToDataRequests(buf);
             dataRequestList.forEach(ctx::fireChannelRead);// 多个命令多次次传输给下一个handler
         }catch (Exception e){

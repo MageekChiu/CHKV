@@ -1,4 +1,4 @@
-package cn.mageek.datanode.cron;
+package cn.mageek.datanode.jobs;
 
 import cn.mageek.common.model.HeartbeatRequest;
 import cn.mageek.datanode.handler.HeartBeatHandler;
@@ -27,7 +27,7 @@ import static cn.mageek.common.util.PropertyLoader.load;
  * @author Mageek Chiu
  * @date 2018/5/7 0007:10:44
  */
-public class Heartbeat implements Runnable{
+public class Heartbeat extends DataRunnable{
     private static final Logger logger = LoggerFactory.getLogger(Heartbeat.class);
 
     private static String nameNodeIP;
@@ -65,8 +65,9 @@ public class Heartbeat implements Runnable{
         }
 
     }
-
+    @Override
     public void connect(Map<String,String> dataPool){
+        this.DATA_POOL = dataPool;
         EventLoopGroup group = new NioEventLoopGroup();
         Bootstrap b = new Bootstrap();
         b.group(group)
@@ -78,7 +79,7 @@ public class Heartbeat implements Runnable{
                         ChannelPipeline p = ch.pipeline();
                         p.addLast(new ObjectDecoder(2048, ClassResolvers.cacheDisabled(this.getClass().getClassLoader())));// in 进制缓存类加载器
                         p.addLast(new ObjectEncoder());// out
-                        p.addLast(new HeartBeatHandler(clientIP,clientPort,dataPool));// in
+                        p.addLast("HeartBeatHandler",new HeartBeatHandler(clientIP,clientPort,DATA_POOL));// in
                     }
                 });
         try {
@@ -97,6 +98,7 @@ public class Heartbeat implements Runnable{
         }
     }
 
+    @Override
     public void run(){
         run1(RUNNING);// 发送心跳
     }
