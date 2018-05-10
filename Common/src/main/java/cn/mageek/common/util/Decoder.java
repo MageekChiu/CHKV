@@ -30,11 +30,10 @@ public class Decoder {
      * @return DataRequest
      */
     public static List<DataRequest> bytesToDataRequests(ByteBuf in) throws Exception{
-
-        if (in.readableBytes()<MINIMAL_LENGTH){
-            throw new EncoderException("less than MINIMAL_LENGTH");
-        }
         String msg = in.toString(CharsetUtil.UTF_8);
+        if (in.readableBytes()<MINIMAL_LENGTH){
+            throw new EncoderException("less than MINIMAL_LENGTH  "+msg);
+        }
         return getDataRequests(msg);
     }
 

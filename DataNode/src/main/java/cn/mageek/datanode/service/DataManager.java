@@ -35,8 +35,7 @@ public class DataManager implements Runnable{
 
     static {
         try( InputStream in = ClassLoader.class.getResourceAsStream("/app.properties")) {
-            Properties pop = new Properties();
-            pop.load(in);
+            Properties pop = new Properties(); pop.load(in);
             clientPort = load(pop,"datanode.client.port"); //dataNode对client开放的端口
             logger.debug("config clientPort:{}", clientPort);
         } catch (IOException e) {

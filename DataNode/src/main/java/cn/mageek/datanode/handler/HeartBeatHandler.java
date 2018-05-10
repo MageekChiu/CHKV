@@ -9,6 +9,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.Map;
 
+import static cn.mageek.common.res.Constants.offlineKey;
+import static cn.mageek.common.res.Constants.offlineValue;
+import static cn.mageek.common.res.Constants.onlineValue;
+
 /**
  * @author Mageek Chiu
  * @date 2018/5/7 0007:13:52
@@ -74,6 +78,7 @@ public class HeartBeatHandler extends ChannelInboundHandlerAdapter {
                 dataTransfer.connect(response.getIPPort(),true);
             }else{
                 logger.debug("DataNode 最后一台下线，不需要转移数据");
+                DATA_POOL.put(offlineKey,offlineValue);// 下线
             }
         }
 

@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import java.net.InetSocketAddress;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 向dataNode转移数据
@@ -34,6 +35,10 @@ public class DataTransfer extends DataRunnable{
 
     @Override
     public void run(){
+//        logger.debug("DataTransfer instance {},dataPool {}",this,DATA_POOL);
+        // 其他节点上线能正确传输，然后其他节点再上线也能正确传输
+        // 其他节点上线能正确传输，然后自己下线就不能正确传输了,DataTransferHandler 里面 DATA_POOL为 null，但是这里每次都不是null,和handler周期有关？
+
         EventLoopGroup group = new NioEventLoopGroup();
         Bootstrap b = new Bootstrap();
         EventExecutorGroup businessGroup = new DefaultEventExecutorGroup(1);//处理耗时业务逻辑，不占用IO线程
@@ -61,7 +66,7 @@ public class DataTransfer extends DataRunnable{
     }
 
 //    @Override
-//       public void connect(Map<String,String> dataPool){
+//    public void connect(Map<String,String> dataPool){
 //        this.DATA_POOL = dataPool;
 //    }
 
@@ -71,11 +76,11 @@ public class DataTransfer extends DataRunnable{
      * @param isAll 是否全部转移
      */
     public void connect(String nextIPPort,boolean isAll){
-        String[] strings = nextIPPort.split(":");
-        this.dataNodeIPPort = nextIPPort;
+        dataNodeIPPort = nextIPPort;
+        String[] strings = dataNodeIPPort.split(":");
+        dataNodeIP = strings[0];
+        dataNodePort = strings[1];
         this.isAll = isAll;
-        this.dataNodeIP = strings[0];
-        this.dataNodePort = strings[1];
     }
 
 }

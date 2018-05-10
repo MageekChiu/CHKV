@@ -50,6 +50,6 @@ public class HeartbeatRequest implements Serializable {
 
     @Override
     public String toString() {
-        return "HeartbeatRequest -- IPPort:"+IPPort+",memoryAvailable Byte:"+memoryAvailable;
+        return "HeartbeatRequest -- IPPort:"+IPPort+",memoryAvailable Byte:"+memoryAvailable+",status:"+status;
     }
 }

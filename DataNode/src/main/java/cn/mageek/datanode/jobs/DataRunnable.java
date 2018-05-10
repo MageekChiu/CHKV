@@ -8,7 +8,7 @@ import java.util.Map;
  */
 public class DataRunnable implements Runnable {
 
-    protected Map<String,String> DATA_POOL ;// 数据存储池
+    protected volatile Map<String,String> DATA_POOL ;// 数据存储池，可能被多个线程访问
 
     @Override
     public void run() {

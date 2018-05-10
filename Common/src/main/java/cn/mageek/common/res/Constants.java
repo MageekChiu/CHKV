@@ -9,4 +9,8 @@ public class Constants {
     public static final String outterSplit = "\t\n";// 不同命令间隔
 
     public static final double pageSize = 5;// 一次转移几条数据
+
+    public static final String offlineKey = "*#*OFFLINE*#*";
+    public static final String offlineValue = "true";
+    public static final String onlineValue = "false";
 }

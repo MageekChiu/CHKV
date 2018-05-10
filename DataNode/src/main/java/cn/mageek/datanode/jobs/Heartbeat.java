@@ -83,7 +83,7 @@ public class Heartbeat extends DataRunnable{
                 });
         try {
             f = b.connect().sync();// 发起连接,阻塞等待
-            logger.debug("Heartbeat connection established");
+//            logger.debug("Heartbeat connection established");
             run1(ONLINE);// 成功后就发起上线请求
 
 //            f.channel().closeFuture().sync();// 这是一段阻塞的代码，除非链路断了，否则是不会停止阻塞的，我们可以在handler中手动关闭，达到关闭客户端的效果
