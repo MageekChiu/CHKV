@@ -1,24 +1,16 @@
-package cn.mageek.datanode.jobs;
+package cn.mageek.datanode.job;
 
-import cn.mageek.common.model.DataRequest;
 import cn.mageek.datanode.handler.DataTransferHandler;
-import cn.mageek.datanode.handler.HeartBeatHandler;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.codec.serialization.ClassResolvers;
-import io.netty.handler.codec.serialization.ObjectDecoder;
-import io.netty.handler.codec.serialization.ObjectEncoder;
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import io.netty.util.concurrent.EventExecutorGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.net.InetSocketAddress;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
 
 /**
  * 向dataNode转移数据

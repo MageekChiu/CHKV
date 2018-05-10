@@ -1,4 +1,4 @@
-package cn.mageek.datanode.jobs;
+package cn.mageek.datanode.job;
 
 import java.util.Map;
 

@@ -22,9 +22,9 @@ NameNode失效则整个系统不可用
 
 各个组件之间的连接情况：
 
-- **NameNode** 要保持和 **N** 个 **Client** 的TCP长连接，但是只有在集群发生变化时才有交互，所以使用IO多路复用问题就不大
-- **NameNode** 要和 **M** 个 **DataNode** 保持心跳，TCP请求响应式，与 **M** 和心跳间隔秒数 **interval** 有关
-- **DataNode** 与 **Client** 也是TCP请求响应式操作，可以考虑加入连接池
+- **NameNode** 要保持和 **N** 个 **Client** 的TCP长连接，但是只有在集群发生变化时才有交互，所以使用IO多路复用负载就不大
+- **NameNode** 要和 **M** 个 **DataNode** 保持心跳，TCP请求响应式，负载与 **M** 和心跳间隔秒数 **interval** 有关
+- **DataNode** 与 **Client** 是TCP请求响应式操作，操作结束断开连接，也可以考虑加入连接池
 - **DataNode** 与 **NameNode** 保持心跳
 - **Client** 与 **NameNode** 保持TCP长连接
 - **Client** 与 **DataNode** TCP请求响应式操作
@@ -43,7 +43,18 @@ NameNode失效则整个系统不可用
 开发优先级：3、1、4、2
 
 具体性能瓶颈要结合压测来分析
+    
+## 使用方法 ##
 
+**DataNode** 运行起来就可以直接使用 **redis-cli** 连接，如`redis-cli -h 127.0.0.1 -p 10100`，并进行`set、get、del`操作；
+
+注意：现在必须首先运行 **NameNode**，然后通过JVM参数的方式调整端口，可以在同一台机器上运行多个 **DataNode**，
+若要在不同机器上运行 **DataNode** 则可以直接修改配置文件
+
+新的DataNode可以直接上线，NameNode会自动通知下一个节点转移相应数据给新节点；DataNode若要下线，
+则可以通过telnet DataNode 节点的下线监听端口（TCP监听） 如 `telnet 127.0.0.1 6666` ，
+并发送 **k** 字符即可，待下线的DataNode收到命令 **k** 后会自动把数据全部转移给下一个DataNode
+然后提示进程pid，用户就可以关闭该DataNode进程了，如 **Linux**： `kill -s 9 23456`，**Windows**:`taskkill /pid 23456`
 
 ## 代码结构 ##
 
@@ -62,16 +73,11 @@ NameNode失效则整个系统不可用
     - model : 一些公用的pojo 
     - util : 一些工具类 
     - helper : 辅助脚本
-    
-    
-## 使用方法 ##
 
-**DataNode** 运行起来就可以直接使用 **redis-cli** 连接，如`redis-cli -h 127.0.0.1 -p 10100`，并进行`set、get、del`操作；
+全部代码在[Github][1]上，欢迎 star，欢迎 issue，欢迎 pull request......
 
-注意：现在必须首先运行 **NameNode**，然后通过JVM参数的方式调整端口，可以在同一台机器上运行多个 **DataNode**，
-若要在不同机器上运行 **DataNode** 则可以直接修改配置文件
+[戳此][2]看原文，来自[MageekChiu][3]
 
-新的DataNode可以直接上线，NameNode会自动通知下一个节点转移相应数据给新节点；DataNode若要下线，
-则可以通过telnet DataNode 节点的下线监听端口（TCP监听） 如 `telnet 127.0.0.1 6666` ，
-并发送 **k** 字符即可，待下线的DataNode收到命令 **k** 后会自动把数据全部转移给下一个DataNode
-然后提示进程pid，用户就可以关闭该DataNode进程了，如 **Linux**： `kill -s 9 23456`，**Windows**:`taskkill /pid 23456`
+[1]: https://github.com/MageekChiu/CHKV
+[2]: http://mageek.cn/archives/96/
+[3]: http://mageek.cn/

@@ -1,6 +1,6 @@
 package cn.mageek.datanode.command;
 
-import cn.mageek.common.command.Command;
+import cn.mageek.common.command.AbstractDataNodeCommand;
 import cn.mageek.common.model.DataRequest;
 import cn.mageek.common.model.DataResponse;
 import cn.mageek.common.model.WebMsgObject;
@@ -13,7 +13,7 @@ import static cn.mageek.common.model.LineType.INT_NUM;
  * @author Mageek Chiu
  * @date 2018/5/6 0007:13:49
  */
-public class CommandCOMMAND extends Command {
+public class CommandCOMMAND extends AbstractDataNodeCommand {
 
     private static final Logger logger = LoggerFactory.getLogger(CommandCOMMAND.class);
 

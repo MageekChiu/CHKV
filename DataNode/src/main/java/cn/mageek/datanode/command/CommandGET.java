@@ -1,6 +1,6 @@
 package cn.mageek.datanode.command;
 
-import cn.mageek.common.command.Command;
+import cn.mageek.common.command.AbstractDataNodeCommand;
 import cn.mageek.common.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,7 +12,7 @@ import static cn.mageek.common.model.LineType.NEXT_LEN;
  * @author Mageek Chiu
  * @date 2018/5/6 0007:13:49
  */
-public class CommandGET extends Command {
+public class CommandGET extends AbstractDataNodeCommand {
 
     private static final Logger logger = LoggerFactory.getLogger(CommandGET.class);
 

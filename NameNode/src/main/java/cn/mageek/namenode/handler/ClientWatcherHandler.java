@@ -45,7 +45,7 @@ public class ClientWatcherHandler extends ChannelInboundHandlerAdapter {
         logger.debug("NameNode received: {}" , request);
         if (request.isImmediately()){// 需要立即回复，一般是刚上线的时候；否则就等节点变化时NameNode主动通知就行了
             WatchResponse response = new WatchResponse(sortedServerMap);
-            logger.debug("NameNode answered: {}" , request);
+            logger.debug("NameNode answered: {}" , response);
             ctx.writeAndFlush(response);
         }
     }

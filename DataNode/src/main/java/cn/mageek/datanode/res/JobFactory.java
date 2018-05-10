@@ -1,6 +1,6 @@
 package cn.mageek.datanode.res;
 
-import cn.mageek.datanode.jobs.DataRunnable;
+import cn.mageek.datanode.job.DataRunnable;
 import org.reflections.Reflections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,12 +10,12 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Command 工厂类
+ * AbstractDataNodeCommand 工厂类
  * @author Mageek Chiu
  * @date 2018/3/13 0013:21:49
  */
 public class JobFactory {
-    private static String packagePrefix = "cn.mageek.datanode.jobs.";
+    private static String packagePrefix = "cn.mageek.datanode.job.";
     private static final Logger logger = LoggerFactory.getLogger(JobFactory.class);
     private static volatile Map<String,Runnable> jobMap;
     private static volatile Map<String,String> DATA_POOL ;// 数据存储池

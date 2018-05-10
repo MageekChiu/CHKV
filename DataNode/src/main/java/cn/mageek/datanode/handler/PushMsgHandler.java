@@ -1,6 +1,6 @@
 package cn.mageek.datanode.handler;
 
-import cn.mageek.common.command.Command;
+import cn.mageek.common.command.AbstractDataNodeCommand;
 import cn.mageek.common.model.DataResponse;
 import cn.mageek.common.model.WebMsgObject;
 import io.netty.channel.ChannelHandlerContext;
@@ -26,7 +26,7 @@ public class PushMsgHandler extends ChannelOutboundHandlerAdapter {
         // 可以再加一个InboundHandler
         if(msg instanceof WebMsgObject ){//是主动推送，需要编码
             WebMsgObject webMsgObject = (WebMsgObject)msg;;//根据消息字符串解析成消息对象
-            DataResponse dataResponse =  ((Command)Class.forName("cn.mageek.common.command.Command"+webMsgObject.getCommand()).newInstance()).send(webMsgObject);
+            DataResponse dataResponse =  ((AbstractDataNodeCommand)Class.forName("cn.mageek.common.command.AbstractDataNodeCommand"+webMsgObject.getCommand()).newInstance()).send(webMsgObject);
             logger.debug("pushMsg: {} to {}",dataResponse,ctx.channel().remoteAddress());
 //            super.write(ctx,rcvMsgObject,promise);
             ctx.writeAndFlush(dataResponse);

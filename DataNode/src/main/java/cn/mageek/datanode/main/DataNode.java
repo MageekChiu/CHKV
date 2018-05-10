@@ -1,16 +1,13 @@
 package cn.mageek.datanode.main;
 
 import cn.mageek.common.model.HeartbeatType;
-import cn.mageek.datanode.jobs.DataTransfer;
-import cn.mageek.datanode.jobs.Heartbeat;
+import cn.mageek.datanode.job.Heartbeat;
 import cn.mageek.datanode.res.CommandFactory;
 import cn.mageek.datanode.res.JobFactory;
 import cn.mageek.datanode.service.DataManager;
 import cn.mageek.datanode.service.CronJobManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.misc.Signal;
-import sun.misc.SignalHandler;
 
 import java.io.*;
 import java.lang.management.ManagementFactory;
@@ -22,7 +19,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
 import static cn.mageek.common.res.Constants.offlineKey;
-import static cn.mageek.common.res.Constants.offlineValue;
 import static cn.mageek.common.res.Constants.onlineValue;
 import static cn.mageek.common.util.PropertyLoader.load;
 

@@ -3,7 +3,7 @@ package cn.mageek.datanode.handler;
 import cn.mageek.common.model.DataRequest;
 import cn.mageek.common.model.DataResponse;
 import cn.mageek.datanode.res.CommandFactory;
-import cn.mageek.common.command.Command;
+import cn.mageek.common.command.AbstractDataNodeCommand;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.slf4j.Logger;
@@ -21,7 +21,7 @@ public class BusinessHandler extends ChannelInboundHandlerAdapter {
     public void channelRead(ChannelHandlerContext ctx, Object obj) throws Exception {
         try {
             DataRequest dataRequest = (DataRequest)obj;//转换消息对象
-            Command command = CommandFactory.getCommand(dataRequest.getCommand());
+            AbstractDataNodeCommand command = CommandFactory.getCommand(dataRequest.getCommand());
             if(command==null){
                 logger.error("error command: {}",dataRequest);
                 return;

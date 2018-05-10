@@ -9,7 +9,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Command 工厂类
+ * AbstractDataNodeCommand 工厂类
  * @author Mageek Chiu
  * @date 2018/3/13 0013:21:49
  */

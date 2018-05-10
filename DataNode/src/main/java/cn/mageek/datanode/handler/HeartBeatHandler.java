@@ -1,7 +1,7 @@
 package cn.mageek.datanode.handler;
 
 import cn.mageek.common.model.HeartbeatResponse;
-import cn.mageek.datanode.jobs.DataTransfer;
+import cn.mageek.datanode.job.DataTransfer;
 import cn.mageek.datanode.res.JobFactory;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -11,7 +11,6 @@ import java.util.Map;
 
 import static cn.mageek.common.res.Constants.offlineKey;
 import static cn.mageek.common.res.Constants.offlineValue;
-import static cn.mageek.common.res.Constants.onlineValue;
 
 /**
  * @author Mageek Chiu
