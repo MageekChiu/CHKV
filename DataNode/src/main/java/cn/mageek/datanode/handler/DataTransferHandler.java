@@ -118,8 +118,8 @@ public class DataTransferHandler  extends ChannelInboundHandlerAdapter {
             f.addListener((ChannelFutureListener) channelFuture -> {
                 logger.debug("successfully sent buf length:{}",num);
                 if(ok.decrementAndGet() == 0){// 尽力而为即可，不去校验转移的正确性，若要校验就得去全部的response中一个一个查看，有error就重发，超时没有回复完毕就只能全部重发，因为对不上，不知道那个对错
-                    logger.info("dataTransfer completed");
                     Thread.sleep(5000);// 等待完成通信
+                    logger.info("dataTransfer completed");
                     channel.close();//断开连接就好,dataTransfer自然结束
                     if (isAll){
                         DATA_POOL.put(offlineKey,offlineValue);// 可以下线了，整个DataNode下线

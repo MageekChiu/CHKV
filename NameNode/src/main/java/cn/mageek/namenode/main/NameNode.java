@@ -1,5 +1,6 @@
 package cn.mageek.namenode.main;
 
+import cn.mageek.common.model.WatchResponse;
 import cn.mageek.namenode.res.CommandFactory;
 import cn.mageek.namenode.res.CronJobFactory;
 import cn.mageek.namenode.service.ClientManager;
@@ -33,6 +34,8 @@ public class NameNode {
     private static final ConcurrentSkipListMap<Integer, String> sortedServerMap =  new ConcurrentSkipListMap<>();//管理所有datanode 对应 hash 和client开放的IP与端口，线程安全
     private static final Map<String,Channel> clientMap = new ConcurrentHashMap<>();//管理所有client 连接
 
+    public static volatile boolean changed = false;// 无变化
+
 
 
     public static void main(String[] args){
@@ -48,13 +51,30 @@ public class NameNode {
             CronJobFactory.construct();
 
             dataNodeManager = new Thread(new DataNodeManager(dataNodeMap,dataNodeClientMap, sortedServerMap,countDownLatch),"DataNodeManager");dataNodeManager.start();
-//            clientManager = new Thread(new ClientManager(dataNodeMap,clientMap,countDownLatch),"ClientManager");clientManager.start();
+            clientManager = new Thread(new ClientManager(sortedServerMap,clientMap,countDownLatch),"ClientManager");clientManager.start();
             cronJobManager = new Thread(new CronJobManager(countDownLatch),"CronJobManager");cronJobManager.start();
             countDownLatch.await();//等待其他几个线程完全启动，然后才能对外提供服务
             logger.info("NameNode is fully up now, pid:{}",ManagementFactory.getRuntimeMXBean().getName());
+
+            watcher();
+
         }catch(Exception ex) {
             logger.error("server start error:",ex);//log4j能直接渲染stack trace
             CommandFactory.destruct();
+        }
+    }
+
+    private static void watcher() throws InterruptedException {
+        for (;;){
+            if (changed){
+                changed = false;
+                logger.info("DataNode changed,now {},\r\n client:{}",sortedServerMap,clientMap);
+                WatchResponse watchResponse = new WatchResponse(sortedServerMap);
+                clientMap.forEach((k,v)->{
+                    v.writeAndFlush(watchResponse);
+                });
+            }
+            Thread.sleep(5000);// 每隔5秒检测一次是否有变化
         }
     }
 }

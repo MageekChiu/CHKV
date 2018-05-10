@@ -1,6 +1,6 @@
 package cn.mageek.namenode.service;
 
-import cn.mageek.namenode.handler.HeartBeatHandler;
+import cn.mageek.namenode.handler.DataNodeHeartBeatHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -17,9 +17,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
 import java.util.Properties;
-import java.util.SortedMap;
-import java.util.TreeMap;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CountDownLatch;
 
@@ -74,7 +71,7 @@ public class DataNodeManager implements Runnable{
                             p.addLast("ReadTimeoutHandler",new ReadTimeoutHandler(31));// in // 多少秒超时
                             p.addLast(new ObjectDecoder(2048, ClassResolvers.cacheDisabled(this.getClass().getClassLoader())));// in 禁止缓存类加载器
                             p.addLast(new ObjectEncoder());// out
-                            p.addLast(new HeartBeatHandler(dataNodeMap,dataNodeClientMap,sortedServerMap));// in
+                            p.addLast(new DataNodeHeartBeatHandler(dataNodeMap,dataNodeClientMap,sortedServerMap));// in
                         }
                     });
 

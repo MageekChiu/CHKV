@@ -10,21 +10,20 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
 /**
+ * 一致性hash 辅助类
  * @author Mageek Chiu
  * @date 2018/5/5 0005:20:17
  */
 public class ConsistHash {
     private static final Logger logger = LoggerFactory.getLogger(ConsistHash.class);
 
-    //key表示服务器的hash值，value表示服务器 ip:port
-    private ConcurrentSkipListMap<Integer, String> sortedServerMap;
-
     /**
-     * 程序初始化，将所有的服务器放入sortedMap中
-     * @param dataNodeClientMap 待添加入Hash环的服务器
+     * 将所有的dataNode 更新到 hash 环中
+     * @param dataNodeClientMap dataNode
+     * @param sortedServerMap dataNode
      */
-    public ConsistHash(ConcurrentSkipListMap<Integer, String> sortedServerMap,Map<String,String> dataNodeClientMap) {
-        this.sortedServerMap = sortedServerMap;
+    public static void getCircle( ConcurrentSkipListMap<Integer, String> sortedServerMap,Map<String,String> dataNodeClientMap) {
+        //key表示服务器的hash值，value表示服务器 ip:port
         for (Map.Entry<String, String> entry : dataNodeClientMap.entrySet()) {
             String IPPort = entry.getValue();
             int hash = getHash(IPPort);
@@ -37,11 +36,13 @@ public class ConsistHash {
     /**
      * 得到数据根据key应当路由到的server结点,也就是 >= hash(key) 的server
      * 如果是server节点，就要不能包含，防止找到本身
+     * @param sortedServerMap server 的hash 环
      * @param key data的key 或者 server 的 ip:port
      * @param isServer  是server还是data
      * @return 服务器节点
      */
-    public String getServer(String key, boolean isServer) {
+    public static String getServer(ConcurrentSkipListMap<Integer, String> sortedServerMap,String key, boolean isServer) {
+        if (sortedServerMap.isEmpty()) return key;// 环为空
         //得到该key的hash值
         int keyHash = getHash(key);
         //得到 >= 该Hash值的所有节点构成的子map
