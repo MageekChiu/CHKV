@@ -90,8 +90,8 @@ public class Decoder {
                 msg = data.substring(1,data.length()-innerSplit.length());
                 break;
             case NEXT_LEN:
-                if( msg.length()==(2+innerSplit.length())) msg="-1";// 未找到就直接-1
-                else msg = data.split(innerSplit)[1];
+                if( data.length()==(3+innerSplit.length())) msg="-1";// $-1\r\n
+                else msg = data.split(innerSplit)[1];// $3\r\nGGG\r\n
                 break;
             case LINE_NUM:
                 break;

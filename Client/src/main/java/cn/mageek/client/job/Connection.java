@@ -4,7 +4,9 @@ import cn.mageek.client.handler.DataHandler;
 import cn.mageek.client.handler.WatchHandler;
 import cn.mageek.common.model.DataRequest;
 import cn.mageek.common.model.WatchRequest;
+import cn.mageek.common.util.Encoder;
 import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
@@ -16,7 +18,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.ConcurrentSkipListMap;
+
+import static cn.mageek.common.util.ConsistHash.getServer;
 
 /**
  * Client直接发送命令即可，由Connection保存有效DataNode并负责计算具体的DataNode然后发起连接与请求，
@@ -72,6 +78,9 @@ public class Connection {
                 }
             });
             heartbeat.start();
+            while (sortedServerMap.isEmpty()){
+
+            }// 阻塞至 有 dataNode 可用，保证connect返回成功的含义
             logger.debug("nameNode connection established and Heartbeat started");
         } catch (InterruptedException e) {
             logger.debug("nameNode connection InterruptedException",e);
@@ -108,17 +117,15 @@ public class Connection {
                 @Override
                 public void initChannel(SocketChannel ch)  throws Exception {
                     ChannelPipeline p = ch.pipeline();
-                    p.addLast(new ObjectDecoder(2048, ClassResolvers.cacheDisabled(this.getClass().getClassLoader())));// in 进制缓存类加载器
-                    p.addLast(new ObjectEncoder());// out
                     p.addLast(new DataHandler());// in
                 }
             });
         try {
-            ChannelFuture f = b.connect().sync();// 发起连接,阻塞等待
-            logger.debug("connectDataNode connection established");
+            ChannelFuture f = b.connect().sync();// 同步发起连接,阻塞等待
             dataNodeChannel = f.channel();
-            dataNodeChannel.closeFuture().sync();// 这是一段阻塞的代码，除非链路断了，否则是不会停止阻塞的，我们可以在handler中手动关闭，达到关闭客户端的效果
-            logger.debug("connectDataNode connection closed");
+//            logger.debug("connectDataNode connection established {}",dataNodeChannel.remoteAddress());
+            ChannelFuture f1 = dataNodeChannel.closeFuture();
+            f1.addListener((ChannelFutureListener) channelFuture -> logger.debug("connectDataNode connection closed"));// 异步回调，避免阻塞
         } catch (InterruptedException e) {
             logger.debug("connectDataNode connection interrupt",e);
         }
@@ -127,12 +134,18 @@ public class Connection {
 
     /**
      *
-     * @param CMD 命令
-     * @param args 潜在的key,value
      */
-    public void sendCommand(String CMD,String... args){
-        DataRequest request ;
-//        dataNodeChannel.writeAndFlush(request);
+    protected void sendCommand(DataRequest request){
+        if (sortedServerMap.isEmpty()) {logger.error("no available DataNode");return;}
+        String IPPort = getServer(sortedServerMap,request.getKey(),false);
+        logger.debug("get DataNode {}",IPPort);
+        String[] strings = IPPort.split(":");
+        String IP = strings[0];String port = strings[1];
+        connectDataNode(IP,port);
+        List<DataRequest> list = new LinkedList<>();
+        list.add(request);
+        ByteBuf buf = Encoder.dataRequestToBytes(list);
+        dataNodeChannel.writeAndFlush(buf);
     }
 
 }

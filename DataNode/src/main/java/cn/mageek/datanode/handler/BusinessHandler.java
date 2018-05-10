@@ -30,7 +30,8 @@ public class BusinessHandler extends ChannelInboundHandlerAdapter {
             logger.debug("dataRequest:{}",dataRequest);
             DataResponse dataResponse = command.receive(dataRequest);//接受消息并处理
             if (dataResponse!=null){//如果需要响应操作
-                 ctx.writeAndFlush(dataResponse);//从当前位置往上找outBound
+                logger.debug("dataResponse:{}",dataResponse);
+                ctx.writeAndFlush(dataResponse);//从当前位置往上找outBound
 //                 ctx.channel().writeAndFlush(dataResponse);//从最底部找outBound
             }
         }catch (Exception e){

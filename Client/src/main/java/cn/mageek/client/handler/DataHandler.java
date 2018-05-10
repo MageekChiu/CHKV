@@ -4,6 +4,8 @@ import cn.mageek.client.job.Connection;
 import cn.mageek.common.model.DataRequest;
 import cn.mageek.common.model.DataResponse;
 import cn.mageek.common.model.WatchResponse;
+import cn.mageek.common.util.Decoder;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.slf4j.Logger;
@@ -29,7 +31,8 @@ public class DataHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        DataResponse response = (DataResponse) msg;//
+        ByteBuf buf = (ByteBuf) msg;
+        DataResponse response = Decoder.bytesToDataResponse(buf);
         logger.debug("DataNode received: {}",response);
         ctx.close();// 收到响应就关闭连接
     }
