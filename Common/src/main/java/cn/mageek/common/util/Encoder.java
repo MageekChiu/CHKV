@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 
 import static cn.mageek.common.model.LineType.*;
+import static cn.mageek.common.res.Constants.IDSplitter;
 import static cn.mageek.common.res.Constants.innerSplit;
 import static cn.mageek.common.res.Constants.outterSplit;
 
@@ -26,25 +27,29 @@ public class Encoder {
     private static final Logger logger = LoggerFactory.getLogger(Encoder.class);
 
     /**
-     * 将消息对象DataResponse编码bit数据，这里不需要List<DataResponse> 是因为解码 的时候把多个命令拆分了，分成多次回复，这样每次就只需要回复一个DataResponse就行
+     * 将消息对象DataResponse编码bit数据，这里不需要List<DataResponse> 是因为解码 的时候把多个命令拆分了，分成多次回复，这样每次就只需要回复一个DataResponse就行，redis里面是有Bulk Reply的，也就是LINE_NUM
      * @param  dataResponse 待编码对象
      * @return 返回buffer
      */
     public static ByteBuf dataResponseToBytes(DataResponse dataResponse){
         String response = "+OK"+ innerSplit;
-        String lineType = dataResponse.getLineType(),msg = dataResponse.getMsg();
+        String lineType = dataResponse.getLineType(),msg = dataResponse.getMsg(),ID = dataResponse.getID();
+        // 兼容redis协议
         switch (dataResponse.getLineType()){
-            case SINGLE_RIGHT:
-            case SINGLE_ERROR:
-            case INT_NUM:
+            case SINGLE_RIGHT://+
+            case SINGLE_ERROR://-
+            case INT_NUM:// :
                 response = lineType+msg+ innerSplit;// 以上三种格式一致
                 break;
-            case NEXT_LEN:
+            case NEXT_LEN:// $
                 if( msg.equals("-1")) response = lineType+"-1"+ innerSplit;// 未找到就直接-1，每一行结束都要有\r\n
                 else response = lineType+msg.length()+ innerSplit +msg+ innerSplit;
                 break;
-            case LINE_NUM:
+            case LINE_NUM:// *
                 break;
+        }
+        if (ID.contains(IDSplitter)){// Client 发来的，需要补上ID
+            response += (outterSplit+ID);
         }
 //        logger.debug("response:{}",response);
         return Unpooled.copiedBuffer(response,CharsetUtil.UTF_8);
@@ -63,21 +68,24 @@ public class Encoder {
             String value = dataRequest.getValue();
             switch (dataRequest.getCommand()){
                 case "SET":
-                    request = "*3"+ innerSplit +"$3"+ innerSplit +"SET"+ innerSplit +"$"+key.length()+ innerSplit +key+ innerSplit +"$"+value.length()+ innerSplit +value+ innerSplit +outterSplit ;
+                    request = "*3"+ innerSplit +"$3"+ innerSplit +"SET"+ innerSplit +"$"+key.length()+ innerSplit +key+ innerSplit +"$"+value.length()+ innerSplit +value+ innerSplit ;
                     break;
                 case "GET":
-                    request = "*2"+ innerSplit +"$3"+ innerSplit +"GET"+ innerSplit +"$"+key.length()+ innerSplit +key+ innerSplit +outterSplit ;
+                    request = "*2"+ innerSplit +"$3"+ innerSplit +"GET"+ innerSplit +"$"+key.length()+ innerSplit +key+ innerSplit ;
                     break;
                 case "DEL":
-                    request = "*2"+ innerSplit +"$3"+ innerSplit +"DEL"+ innerSplit +"$"+key.length()+ innerSplit +key+ innerSplit +outterSplit ;
+                    request = "*2"+ innerSplit +"$3"+ innerSplit +"DEL"+ innerSplit +"$"+key.length()+ innerSplit +key+ innerSplit ;
                     break;
                 case "COMMAND":
+                    request = "*1"+ innerSplit +"$7"+ innerSplit +"COMMAND"+ innerSplit ;
                     break;
             }
+            request += (dataRequest.getID()+innerSplit);// 补上ID，但是就不加字符长度了，不属于redis
+            request += outterSplit;// 补上多条命令之间的分隔符
             requests.append(request);
         }
         String finalString = requests.toString();
-        finalString = finalString.substring(0,finalString.length()-outterSplit.length());// 去掉最后一个 outterSplit
+//        finalString = finalString.substring(0,finalString.length()-outterSplit.length());// 去掉最后一个 outterSplit
 //        logger.debug("final dataRequests string {},length:{},request num:{}",finalString,finalString.length(),dataRequests.size());
         return Unpooled.copiedBuffer(finalString,CharsetUtil.UTF_8);
     }

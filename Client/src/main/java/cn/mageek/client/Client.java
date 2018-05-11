@@ -1,7 +1,9 @@
 package cn.mageek.client;
 
-import cn.mageek.client.job.Connection;
 import cn.mageek.common.model.DataRequest;
+import cn.mageek.common.model.DataResponse;
+
+import static cn.mageek.common.model.LineType.SINGLE_ERROR;
 
 /**
  * @author Mageek Chiu
@@ -13,20 +15,37 @@ public class Client extends Connection {
 
     }
 
-    public void set(String key, String value){
-        DataRequest request = new DataRequest("SET",key,value);
-        sendCommand(request);
+    public Client(String nameNodeIP,String nameNodePort) {
+        super(nameNodeIP,nameNodePort);
     }
 
-    public void del(String key){
+    /**
+     *
+     * @param key
+     * @param value
+     * @return 设置是否成功
+     */
+    public boolean set(String key, String value){
+        DataRequest request = new DataRequest("SET",key,value);
+        DataResponse r =  sendCommand(request);// 自动生成ID
+        return !r.getLineType().equals(SINGLE_ERROR);
+    }
+
+    /**
+     *
+     * @param key
+     * @return 删除键个数
+     */
+    public int del(String key){
         DataRequest request = new DataRequest("DEL",key,"");
-        sendCommand(request);
+        DataResponse r =  sendCommand(request);
+        return r.getLineType().equals(SINGLE_ERROR) ? -1 : Integer.parseInt(r.getMsg());
     }
 
     public String get(String key){
         DataRequest request = new DataRequest("GET",key,"");
-        sendCommand(request);
-        return "";
+        DataResponse r =  sendCommand(request);
+        return r.getMsg();
     }
 
 }

@@ -25,7 +25,7 @@ public class Decoder {
     private static final Logger logger = LoggerFactory.getLogger(Decoder.class);
 
     /**
-     * 将接收到的bit数据解析为消息对象DataRequest的列表，是redis协议的子集
+     * 将接收到的bit数据解析为消息对象DataRequest的列表，兼容几个redis命令的协议
      * @param in 输入buffer
      * @return DataRequest
      */
@@ -42,33 +42,35 @@ public class Decoder {
 
         List<DataRequest> dataRequestList = new LinkedList<>();
 
-        String[] msgs = s.split(outterSplit);// 多个命令之间用 \t\n 分割，一个命令就没有 \t\n   // 这个不属于redis，是我为了自己方便加的
+        String[] msgs = s.split(outterSplit);// 多个命令之间用 \t\n 分割  // 这个不属于redis，是我为了自己方便加的
         logger.debug("Decoder 获得 {} 条命令",msgs.length);
         for (String msg : msgs) {
             String[] strings = msg.split(innerSplit);// 单个命令内部用 \r\n 分割
-//        for (String string : strings) { logger.debug(string); }
 
+            // 简单的校验
             int allLineNumber = strings.length;
+            String ID = strings[allLineNumber-1];// Client发过来的才是ID,redis 协议没有这一段，所以可能是任何字段
             int ckvLineNumber = Integer.parseInt(strings[0].substring(1));
-            if (allLineNumber != 7 && allLineNumber != 5  && allLineNumber != 3) throw new Exception("all line number Exception");// 报文总行数
-            if (ckvLineNumber != 3 && ckvLineNumber != 2 && ckvLineNumber != 1) throw new Exception("command、key、value line number Exception");// command、key、value 的行数
+//            if (allLineNumber != 7 && allLineNumber != 5  && allLineNumber != 3) throw new Exception("all line number Exception");// 报文总行数
+//            if (ckvLineNumber != 3 && ckvLineNumber != 2 && ckvLineNumber != 1) throw new Exception("command、key、value line number Exception");// command、key、value 的行数
 
             String command = strings[2].toUpperCase();// 命令全部转大写
             if (Integer.parseInt(strings[1].substring(1)) != command.length()) throw new Exception("command length Exception");
-            if (command.equals("COMMAND")){// 没有 key value
-                ((LinkedList<DataRequest>) dataRequestList).addLast(new DataRequest(command,"none","none"));
+            if (command.equals("COMMAND")){// 没有 key
+                dataRequestList.add(new DataRequest(command,"none","none",ID));
                 continue;
             }
 
+            // 有 key
             String key = strings[4];
             if (Integer.parseInt(strings[3].substring(1)) != key.length()) throw new Exception("key length Exception");
 
-            String value = "none";
-            if (allLineNumber == 7){
+            String value = "none";// 没有 value
+            if (allLineNumber >= 7){// 有 value
                 value = strings[6];
                 if (Integer.parseInt(strings[5].substring(1)) != value.length()) throw new Exception("value length Exception");
             }
-            ((LinkedList<DataRequest>) dataRequestList).addLast(new DataRequest(command,key,value));
+            dataRequestList.add(new DataRequest(command,key,value,ID));
         }
         return dataRequestList;
     }
@@ -81,6 +83,13 @@ public class Decoder {
     public static DataResponse bytesToDataResponse(ByteBuf in) throws Exception{
 
         String data = in.toString(CharsetUtil.UTF_8);
+        String[] datas = data.split(outterSplit);
+        String ID = "";
+        if (datas.length>1){// 是client发出的请求
+//            logger.debug("Client:{},{},{}",data,datas[0],datas[1]);
+            data = datas[0];
+            ID = datas[1];
+        }
         String lineType = data.substring(0,1);
         String msg = "";
         switch (lineType){
@@ -96,7 +105,7 @@ public class Decoder {
             case LINE_NUM:
                 break;
         }
-        DataResponse response = new DataResponse(lineType,msg);
+        DataResponse response = new DataResponse(lineType,msg,ID);
         return response;
     }
 

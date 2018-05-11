@@ -11,9 +11,17 @@ public class DataResponse implements Serializable {
     private String lineType ;// +OK,-error msg,:number,$length\r\n string\r\n
     private String msg;
 
+    private String ID;// 要实现请求响应的对应，必须要ID
+
     public DataResponse(String lineType, String msg) {
         this.lineType = lineType;
         this.msg = msg;
+    }
+
+    public DataResponse(String lineType, String msg, String ID) {
+        this.lineType = lineType;
+        this.msg = msg;
+        this.ID = ID;
     }
 
     public String getLineType() {
@@ -32,8 +40,16 @@ public class DataResponse implements Serializable {
         this.msg = msg;
     }
 
+    public String getID() {
+        return ID;
+    }
+
+    public void setID(String ID) {
+        this.ID = ID;
+    }
+
     @Override
     public String toString() {
-        return "DataResponse -- "+getLineType()+getMsg();
+        return "DataResponse -- lineType:"+getLineType()+",msg:"+getMsg()+", ID: "+ID;
     }
 }

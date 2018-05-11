@@ -13,4 +13,6 @@ public class Constants {
     public static final String offlineKey = "*#*OFFLINE*#*";
     public static final String offlineValue = "true";
     public static final String onlineValue = "false";
+
+    public static final String IDSplitter = "__@__";
 }

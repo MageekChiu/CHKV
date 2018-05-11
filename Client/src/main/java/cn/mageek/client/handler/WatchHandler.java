@@ -1,8 +1,6 @@
 package cn.mageek.client.handler;
 
-import cn.mageek.client.job.Connection;
-import cn.mageek.common.model.DataResponse;
-import cn.mageek.common.model.HeartbeatResponse;
+import cn.mageek.client.Connection;
 import cn.mageek.common.model.WatchResponse;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -39,7 +37,6 @@ public class WatchHandler extends ChannelInboundHandlerAdapter {
         logger.debug("DataNode received: {}",response);
         // 修改本地的hash环
         connection.sortedServerMap = response.getHashCircle();
-//        ctx.close();// 收到响应就关闭连接
     }
 
     @Override

@@ -1,15 +1,15 @@
 package cn.mageek.client.handler;
 
-import cn.mageek.client.job.Connection;
-import cn.mageek.common.model.DataRequest;
 import cn.mageek.common.model.DataResponse;
-import cn.mageek.common.model.WatchResponse;
 import cn.mageek.common.util.Decoder;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 处理 来自NameNode 的 DataNode 监视事件
@@ -18,6 +18,12 @@ import org.slf4j.LoggerFactory;
  */
 public class DataHandler extends ChannelInboundHandlerAdapter {
     private static final Logger logger = LoggerFactory.getLogger(DataHandler.class);
+
+    private volatile Map<String ,DataResponse> dataResponseMap;// 存放所有响应
+
+    public DataHandler(Map<String, DataResponse> dataResponseMap) {
+        this.dataResponseMap = dataResponseMap;
+    }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
@@ -34,7 +40,8 @@ public class DataHandler extends ChannelInboundHandlerAdapter {
         ByteBuf buf = (ByteBuf) msg;
         DataResponse response = Decoder.bytesToDataResponse(buf);
         logger.debug("DataNode received: {}",response);
-        ctx.close();// 收到响应就关闭连接
+        dataResponseMap.put(response.getID(),response);// 放置结果
+//        ctx.close();// 收到响应就关闭连接
     }
 
     @Override
