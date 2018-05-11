@@ -1,6 +1,6 @@
 #  Consistent Hashing based Key-Value Memory Storage  #
 
-基于一致性哈希的分布式内存键值存储——CHKV。
+基于[一致性哈希][5]的分布式内存键值存储——CHKV。
 
 
 ## 系统设计 ##
@@ -8,12 +8,14 @@
 - **NameNode** : 维护key与节点的映射关系（Hash环），用心跳检测DataNode（一般被动，被动失效时主动询问三次），节点增减等系统信息变化时调整数据并通知Client；
 - **DataNode** : 存储具体的数据，向NameNode主动发起心跳并采用请求响应的方式来实现上下线，便于NameNode挪动数据
 - **Client** : 负责向NameNode请求DataNode数据和Hash算法等系统信息并监听其变化，操纵数据时直接向对应DataNode发起请求就行，暂时只包含set,get,delete三个操作
-****
+
 NameNode失效则整个系统不可用
 
-若当成内存数据库使用则 只要有一个 DataNode 失效（未经请求与数据转移就下线了）整个系统就不可对外服务；
-若当成内存缓存使用则 DataNode 失效只是失去了一部分缓存，系统仍然可用。
-客户要使用**CHKV**就必须使用Client库或者自己实现，可以是多种语言的API。
+若当成内存数据库使用，则只要有一个 DataNode 失效（未经请求与数据转移就下线了）
+整个系统就不可对外服务；
+若当成内存缓存使用，则 DataNode 失效只是失去了一部分缓存，系统仍然可用。
+
+客户要使用**CHKV**就必须使用Client库或者自己依据协议（兼容redis）实现，可以是多种语言的API。
 
 
 ## 分析 ##
@@ -43,6 +45,7 @@ NameNode失效则整个系统不可用
 开发优先级：3、1、4、2
 
 具体性能瓶颈要结合压测来分析
+
     
 ## 使用方法 ##
 
@@ -56,28 +59,65 @@ NameNode失效则整个系统不可用
 并发送 **k** 字符即可，待下线的DataNode收到命令 **k** 后会自动把数据全部转移给下一个DataNode
 然后提示进程pid，用户就可以关闭该DataNode进程了，如 **Linux**： `kill -s 9 23456`，**Windows**:`taskkill /pid 23456`
 
+NameNode和DataNode启动后就可以使用Client了，代码示例如下：
+
+Client代码示例[在此，关键如下：][4]
+
+        try(Client client = new Client("192.168.0.136","10102")){
+            logger.debug(client.set("192.168.0.136:10099","123456")+"");
+            logger.debug(client.get("192.168.0.136:10099")+"");
+            logger.debug(client.set("112","23")+"");
+            logger.debug(client.del("1321")+"");
+            logger.debug(client.del("112")+"");
+        }
+
 ## 代码结构 ##
 
 - **NameNode** : 实现 NameNode 功能
-    - d : 
-    - d : 
+
+    - handler : handler
+    - res : 资源，如常量，命令工厂 
+    - service : 服务，含Client管理，DataNode管理
+    
 - **DataNode** : 实现 DataNode 功能
+
     - command : 处理客户端各个命令的具体命令对象
-    - cron : 一些具有定时性质的任务 
+    - job : 一些的任务如心跳、数据迁移 
     - handler : 处理连接的handler
+    - service : 服务，含定时任务管理，数据请求管理
+    
 - **Client** : 实现 Client 功能
-    - d : 
-    - d : 
+
+    - handler : handler
+    - Client : 暴露给用户的命令管理 
+    - Connection : 发出网络请求 
+    
 - **Common** : 实现一些公共的功能，上面三个模块依赖于此模块 
+
     - command : 命令抽象类
-    - model : 一些公用的pojo 
+    - model : 一些公用的pojo，如请求响应对象 
     - util : 一些工具类 
     - helper : 辅助脚本
 
+水平有限，目前项目的问题还很多，可以列个清单：
+
+- 高可用性保证
+- 断线重连
+- DataNode迁移数据的完整性保证
+- 迁移过程数据的一致性
+- 对于WeakReference的支持
+- 更多数据类型
+- 更多操作
+- 完整的校验机制
+- 等等......
+
 全部代码在[Github][1]上，欢迎 star，欢迎 issue，欢迎 pull request......
+总之就是欢迎大家和我一起完善这个项目，一起进步。
 
 [戳此][2]看原文，来自[MageekChiu][3]
 
 [1]: https://github.com/MageekChiu/CHKV
 [2]: http://mageek.cn/archives/96/
 [3]: http://mageek.cn/
+[4]: https://github.com/MageekChiu/CHKV/blob/master/Client/src/test/java/cn/mageek/client/ConnectionTest.java
+[5]: https://zh.wikipedia.org/wiki/%E4%B8%80%E8%87%B4%E5%93%88%E5%B8%8C
