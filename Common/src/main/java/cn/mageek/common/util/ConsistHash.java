@@ -18,19 +18,25 @@ public class ConsistHash {
     private static final Logger logger = LoggerFactory.getLogger(ConsistHash.class);
 
     /**
-     * 将所有的dataNode 更新到 hash 环中
-     * @param dataNodeClientMap dataNode
-     * @param sortedServerMap dataNode
+     * 将dataNode 加入到 hash 环中
+     * @param IPPort 刚加入的dataNode节点
+     * @param sortedServerMap dataNode hash 环
      */
-    public static void getCircle( ConcurrentSkipListMap<Integer, String> sortedServerMap,Map<String,String> dataNodeClientMap) {
+    public static void circleAdd(ConcurrentSkipListMap<Integer, String> sortedServerMap,String IPPort) {
         //key表示服务器的hash值，value表示服务器 ip:port
-        for (Map.Entry<String, String> entry : dataNodeClientMap.entrySet()) {
-            String IPPort = entry.getValue();
-            int hash = getHash(IPPort);
-//            logger.debug("{} 入环, Hash {}",IPPort,hash);
-            // 维护集合
-            sortedServerMap.put(hash,IPPort);
-        }
+        int hash = getHash(IPPort);
+        logger.debug("{} 入环, Hash {}",IPPort,hash);
+        sortedServerMap.put(hash,IPPort);
+    }
+    /**
+     * 将dataNode从hash 环中删除
+     * @param IPPort 刚加入的dataNode节点
+     * @param sortedServerMap dataNode hash 环
+     */
+    public static void cirlceDel(ConcurrentSkipListMap<Integer, String> sortedServerMap,String IPPort){
+        sortedServerMap.forEach((k,v)->{
+            if (v.equals(IPPort)) {sortedServerMap.remove(k);}
+        });
     }
 
     /**
@@ -42,7 +48,7 @@ public class ConsistHash {
      * @return 服务器节点
      */
     public static String getServer(ConcurrentSkipListMap<Integer, String> sortedServerMap,String key, boolean isServer) {
-        if (sortedServerMap.isEmpty()) return key;// 环为空
+        if (sortedServerMap.isEmpty()) return key;// 环为空，返回自己就行了
         //得到该key的hash值
         int keyHash = getHash(key);
         //得到 >= 该Hash值的所有节点构成的子map

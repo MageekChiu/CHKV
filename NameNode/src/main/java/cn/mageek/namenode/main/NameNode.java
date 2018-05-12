@@ -12,8 +12,6 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.management.ManagementFactory;
 import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CountDownLatch;
@@ -28,21 +26,26 @@ public class NameNode {
 
     private static final Logger logger = LoggerFactory.getLogger(NameNode.class);
 
-    private static final Map<String,Channel> dataNodeMap = new ConcurrentHashMap<>();//管理所有datanode 连接
-    private static final Map<String,String> dataNodeClientMap = new ConcurrentHashMap<>();//管理所有datanode 对client开放的IP与端口
-//    private static final SortedMap<Integer, String> sortedServerMap = new TreeMap<>();//管理所有datanode 对应 hash 和client开放的IP与端口
-    private static final ConcurrentSkipListMap<Integer, String> sortedServerMap =  new ConcurrentSkipListMap<>();//管理所有datanode 对应 hash 和client开放的IP与端口，线程安全
-    private static final Map<String,Channel> clientMap = new ConcurrentHashMap<>();//管理所有client 连接
+    // 存储信息
+//    key表示dataNode的/ip:port，value表示对应信道 ， 上线就有，并且维护，保证map里面的连接都是活跃的
+    public static volatile Map<String,Channel> dataNodeMap = new ConcurrentHashMap<>();//管理所有datanode 连接
+//    key表示dataNode的/ip:port，value表示其对客户端开放的ip:port  ， 发送心跳就有
+    public static volatile Map<String,String> dataNodeClientMap = new ConcurrentHashMap<>();//管理所有datanode 对client开放的IP与端口
+//    key表示dataNode的hash值，value表示其对客户端开放的ip:port  ， 发送心跳状态更新后就有
+    public static volatile ConcurrentSkipListMap<Integer, String> sortedServerMap =  new ConcurrentSkipListMap<>();//管理所有datanode 对应 hash 和client开放的IP与端口，线程安全
 
-    public static volatile boolean changed = false;// 无变化
+    public static volatile Map<String,Channel> clientMap = new ConcurrentHashMap<>();//管理所有client 连接
 
+    // 辅助参数
+    public static volatile boolean dataNodeChanged = false;// DataNode有无变化
+    public static volatile CountDownLatch countDownLatch;//任务个数
 
 
     public static void main(String[] args){
         Thread.currentThread().setName("NameNode");
+
+        int jobNumber = 3;countDownLatch = new CountDownLatch(jobNumber);
         Thread dataNodeManager,clientManager,cronJobManager;
-        int jobNumber = 2;
-        CountDownLatch countDownLatch = new CountDownLatch(jobNumber);
 
         try{
             // 初始化命令对象
@@ -50,25 +53,32 @@ public class NameNode {
             // 初始化定时任务对象
             CronJobFactory.construct();
 
-            dataNodeManager = new Thread(new DataNodeManager(dataNodeMap,dataNodeClientMap, sortedServerMap,countDownLatch),"DataNodeManager");dataNodeManager.start();
-            clientManager = new Thread(new ClientManager(sortedServerMap,clientMap,countDownLatch),"ClientManager");clientManager.start();
-            cronJobManager = new Thread(new CronJobManager(countDownLatch),"CronJobManager");cronJobManager.start();
-            countDownLatch.await();//等待其他几个线程完全启动，然后才能对外提供服务
-            logger.info("NameNode is fully up now, pid:{}",ManagementFactory.getRuntimeMXBean().getName());
+//            dataNodeManager = new Thread(new DataNodeManager(dataNodeMap,dataNodeClientMap, sortedServerMap,countDownLatch),"DataNodeManager");dataNodeManager.start();
+//            clientManager = new Thread(new ClientManager(sortedServerMap,clientMap,countDownLatch),"ClientManager");clientManager.start();
+//            cronJobManager = new Thread(new CronJobManager(countDownLatch),"CronJobManager");cronJobManager.start();
 
-            watcher();
+            dataNodeManager = new Thread(new DataNodeManager(),"DataNodeManager");dataNodeManager.start();
+            clientManager = new Thread(new ClientManager(),"ClientManager");clientManager.start();
+            cronJobManager = new Thread(new CronJobManager(),"CronJobManager");cronJobManager.start();
+
+            countDownLatch.await();//等待其他几个线程完全启动，然后才能对外提供服务
+            logger.info("NameNode is fully up now ,jobNumber :{},pid:{}",jobNumber,ManagementFactory.getRuntimeMXBean().getName());
+            // 开始监控DataNode变更事件
+            dataNodeWatcher();
 
         }catch(Exception ex) {
-            logger.error("server start error:",ex);//log4j能直接渲染stack trace
+            logger.error("NameNode start error:",ex);
             CommandFactory.destruct();
+            CronJobFactory.destruct();
         }
     }
 
-    private static void watcher() throws InterruptedException {
+    private static void dataNodeWatcher() throws InterruptedException {
+        //noinspection InfiniteLoopStatement
         for (;;){
-            if (changed){
-                changed = false;
-                logger.info("DataNode changed,now {},\r\n client:{}",sortedServerMap,clientMap);
+            if (dataNodeChanged){
+                dataNodeChanged = false;
+                logger.info("DataNode dataNodeChanged,now {},\r\n client:{}",sortedServerMap,clientMap);
                 WatchResponse watchResponse = new WatchResponse(sortedServerMap);
                 clientMap.forEach((k,v)->{
                     v.writeAndFlush(watchResponse);

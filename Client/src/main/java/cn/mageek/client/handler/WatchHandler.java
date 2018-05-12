@@ -34,7 +34,7 @@ public class WatchHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         WatchResponse response = (WatchResponse) msg;//
-        logger.debug("DataNode received: {}",response);
+        logger.debug("received DataNode list: {}",response);
         // 修改本地的hash环
         connection.sortedServerMap = response.getHashCircle();
     }

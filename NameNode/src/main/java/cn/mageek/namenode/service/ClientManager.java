@@ -20,6 +20,8 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CountDownLatch;
 
+import static cn.mageek.namenode.main.NameNode.countDownLatch;
+
 /**
  * 管理所有client
  * @author Mageek Chiu
@@ -28,32 +30,31 @@ import java.util.concurrent.CountDownLatch;
 public class ClientManager implements Runnable{
     private static final Logger logger = LoggerFactory.getLogger(DataNodeManager.class);
     private static String clientPort;
-    private ConcurrentSkipListMap<Integer, String> sortedServerMap;//管理所有datanode
-    private Map<String,Channel> clientMap ;//管理所有clientMap
-    private CountDownLatch countDownLatch;//
+//    private ConcurrentSkipListMap<Integer, String> sortedServerMap;//管理所有datanode
+//    private Map<String,Channel> clientMap ;//管理所有clientMap
+//    private CountDownLatch countDownLatch;//
 
     static {
         try( InputStream in = ClassLoader.class.getResourceAsStream("/app.properties")) {
             Properties pop = new Properties();
             pop.load(in);
             clientPort = pop.getProperty("namenode.client.port");// 对client开放的端口
-            logger.debug("config clientPort:{}", clientPort);
+//            logger.debug("config clientPort:{}", clientPort);
         } catch (IOException e) {
             logger.error("read config error",e);
         }
     }
 
-    public ClientManager(ConcurrentSkipListMap<Integer, String> sortedServerMap,Map<String,Channel> clientMap,CountDownLatch countDownLatch) {
-        this.sortedServerMap = sortedServerMap;
-        this.clientMap = clientMap;
-        this.countDownLatch = countDownLatch;
-    }
+//    public ClientManager(ConcurrentSkipListMap<Integer, String> sortedServerMap,Map<String,Channel> clientMap,CountDownLatch countDownLatch) {
+//        this.sortedServerMap = sortedServerMap;
+//        this.clientMap = clientMap;
+//        this.countDownLatch = countDownLatch;
+//    }
 
     public void run() {
         // Configure the server.
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);//接收连接
         EventLoopGroup workerGroup = new NioEventLoopGroup(2);//处理连接的I/O事件
-//        EventExecutorGroup businessGroup = new DefaultEventExecutorGroup(4);//处理耗时业务逻辑，我实际上为了统一起见把全部业务逻辑都放这里面了
         try {
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup)
@@ -66,7 +67,8 @@ public class ClientManager implements Runnable{
                             p.addLast("ReadTimeoutHandler",new ReadTimeoutHandler(100));// in // 多少秒超时
                             p.addLast(new ObjectDecoder(2048, ClassResolvers.cacheDisabled(this.getClass().getClassLoader())));// in 进制缓存类加载器
                             p.addLast(new ObjectEncoder());// out
-                            p.addLast(new ClientWatcherHandler( sortedServerMap,clientMap));// in
+//                            p.addLast(new ClientWatcherHandler( sortedServerMap,clientMap));// in
+                            p.addLast(new ClientWatcherHandler());// in
                         }
                     });
 
@@ -84,14 +86,8 @@ public class ClientManager implements Runnable{
         } finally {
             workerGroup.shutdownGracefully();
             bossGroup.shutdownGracefully();
-//            businessGroup.shutdownGracefully();
         }
-
     }
-
-
-
-
 }
 
 

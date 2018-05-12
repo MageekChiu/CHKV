@@ -17,26 +17,26 @@ public class ConnectionTest {
 //        Connection connection = new Connection();
 //        connection.connect();
 
-//        Client client = new Client();
-//        client.connect("192.168.0.136","10102");
-//
-//        logger.debug(client.set("192.168.0.136:10099","123456")+"");
-//        logger.debug(client.get("192.168.0.136:10099")+"");
-//        logger.debug(client.set("112","23")+"");
-//        logger.debug(client.del("1321")+"");
-//        logger.debug(client.del("112")+"");
+        Client client = new Client();
+        client.connect("192.168.0.136","10102");
+
+        logger.debug(client.set("192.168.0.136:10099","123456")+"");
+        logger.debug(client.get("192.168.0.136:10099")+"");
+        logger.debug(client.set("112","23")+"");
+        logger.debug(client.del("1321")+"");
+        logger.debug(client.del("112")+"");
 //
 //        client.close();
 
 
 
-        try(Client client = new Client("192.168.0.136","10102")){
-            logger.debug(client.set("192.168.0.136:10099","123456")+"");
-            logger.debug(client.get("192.168.0.136:10099")+"");
-            logger.debug(client.set("112","23")+"");
-            logger.debug(client.del("1321")+"");
-            logger.debug(client.del("112")+"");
-        }
+//        try(Client client = new Client("192.168.0.136","10102")){
+//            logger.debug(client.set("192.168.0.136:10099","123456")+"");
+//            logger.debug(client.get("192.168.0.136:10099")+"");
+//            logger.debug(client.set("112","23")+"");
+//            logger.debug(client.del("1321")+"");
+//            logger.debug(client.del("112")+"");
+//        }
 
     }
 

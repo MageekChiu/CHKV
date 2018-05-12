@@ -10,37 +10,39 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListMap;
 
+import static cn.mageek.namenode.main.NameNode.clientMap;
+import static cn.mageek.namenode.main.NameNode.sortedServerMap;
+
 /**
  * @author Mageek Chiu
  * @date 2018/5/7 0007:13:52
  */
 public class ClientWatcherHandler extends ChannelInboundHandlerAdapter {
     private static final Logger logger = LoggerFactory.getLogger(ClientWatcherHandler.class);
-    private ConcurrentSkipListMap<Integer, String> sortedServerMap;//管理所有datanode key:DataNode hash ,value: IP:port
-    private Map<String,Channel> clientMap;// 管理所有client，key ip:port,value chanel
+//    private ConcurrentSkipListMap<Integer, String> sortedServerMap;//管理所有datanode key:DataNode hash ,value: IP:port
+//    private Map<String,Channel> clientMap;// 管理所有client，key ip:port,value chanel
 
-    public ClientWatcherHandler(ConcurrentSkipListMap<Integer, String> sortedServerMap, Map<String,Channel> clientMap){
-        this.sortedServerMap = sortedServerMap;
-        this.clientMap = clientMap;
-    }
+//    public ClientWatcherHandler(ConcurrentSkipListMap<Integer, String> sortedServerMap, Map<String,Channel> clientMap){
+//        this.sortedServerMap = sortedServerMap;
+//        this.clientMap = clientMap;
+//    }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         String connection = ctx.channel().remoteAddress().toString();
         clientMap.put(connection,ctx.channel());
-        logger.info("new connection arrived: {} clients living {}",connection, clientMap.size());//包含ip:port
+        logger.info("new connection arrived: {} clients living {}",connection, clientMap.size());
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         String connection = ctx.channel().remoteAddress().toString();
         clientMap.remove(connection);
-        logger.info("connection closed: {},uuid:{}, clients living {}",connection, clientMap.size());//包含ip:port
+        logger.info("connection closed: {},uuid:{}, clients living {}",connection, clientMap.size());
     }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        String connection = ctx.channel().remoteAddress().toString();
         WatchRequest request = (WatchRequest)msg ;
         logger.debug("NameNode received: {}" , request);
         if (request.isImmediately()){// 需要立即回复，一般是刚上线的时候；否则就等节点变化时NameNode主动通知就行了

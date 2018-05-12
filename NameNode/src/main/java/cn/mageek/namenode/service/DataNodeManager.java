@@ -15,12 +15,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.ConcurrentSkipListMap;
-import java.util.concurrent.CountDownLatch;
 
 import static cn.mageek.common.util.PropertyLoader.load;
+import static cn.mageek.namenode.main.NameNode.countDownLatch;
 
 /**
  * 管理所有dataNode
@@ -30,35 +28,38 @@ import static cn.mageek.common.util.PropertyLoader.load;
 public class DataNodeManager implements Runnable{
     private static final Logger logger = LoggerFactory.getLogger(DataNodeManager.class);
     private static String dataNodePort;
-    private Map<String,Channel> dataNodeMap;//管理所有datanode
-    private Map<String,String> dataNodeClientMap ;//管理所有datanode 对client开放的IP与端口
-    private ConcurrentSkipListMap<Integer, String> sortedServerMap ;//管理所有datanode 对应 hash 和 ip:port
+//    private Map<String,Channel> dataNodeMap;//管理所有datanode
+//    private Map<String,String> dataNodeClientMap ;//管理所有datanode 对client开放的IP与端口
+//    private ConcurrentSkipListMap<Integer, String> sortedServerMap ;//管理所有datanode 对应 hash 和 ip:port
 
-    private CountDownLatch countDownLatch;//
+//    private CountDownLatch countDownLatch;//
 
     static {
         try( InputStream in = ClassLoader.class.getResourceAsStream("/app.properties")) {
             Properties pop = new Properties();
             pop.load(in);
             dataNodePort = load(pop,"namenode.datanode.port");// 对dataNode开放的端口
-            logger.debug("config dataNodePort:{}", dataNodePort);
+//            logger.debug("config dataNodePort:{}", dataNodePort);
         } catch (IOException e) {
             logger.error("read config error",e);
         }
     }
 
-    public DataNodeManager(Map<String,Channel> dataNodeMap, Map<String,String> dataNodeClientMap , ConcurrentSkipListMap<Integer, String> sortedServerMap, CountDownLatch countDownLatch) {
-        this.dataNodeMap = dataNodeMap;
-        this.dataNodeClientMap = dataNodeClientMap;
-        this.countDownLatch = countDownLatch;
-        this.sortedServerMap = sortedServerMap;
-    }
+//    public DataNodeManager(Map<String,Channel> dataNodeMap, Map<String,String> dataNodeClientMap , ConcurrentSkipListMap<Integer, String> sortedServerMap, CountDownLatch countDownLatch) {
+//        this.dataNodeMap = dataNodeMap;
+//        this.dataNodeClientMap = dataNodeClientMap;
+//        this.countDownLatch = countDownLatch;
+//        this.sortedServerMap = sortedServerMap;
+//    }
+
+//    public DataNodeManager(CountDownLatch countDownLatch) {
+//        this.countDownLatch = countDownLatch;
+//    }
 
     public void run() {
         // Configure the server.
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);//接收连接
         EventLoopGroup workerGroup = new NioEventLoopGroup(2);//处理连接的I/O事件
-//        EventExecutorGroup businessGroup = new DefaultEventExecutorGroup(4);//处理耗时业务逻辑，我实际上为了统一起见把全部业务逻辑都放这里面了
         try {
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup)
@@ -71,7 +72,8 @@ public class DataNodeManager implements Runnable{
                             p.addLast("ReadTimeoutHandler",new ReadTimeoutHandler(31));// in // 多少秒超时
                             p.addLast(new ObjectDecoder(2048, ClassResolvers.cacheDisabled(this.getClass().getClassLoader())));// in 禁止缓存类加载器
                             p.addLast(new ObjectEncoder());// out
-                            p.addLast(new DataNodeHeartBeatHandler(dataNodeMap,dataNodeClientMap,sortedServerMap));// in
+//                            p.addLast(new DataNodeHeartBeatHandler(dataNodeMap,dataNodeClientMap,sortedServerMap));// in
+                            p.addLast(new DataNodeHeartBeatHandler());// in
                         }
                     });
 
@@ -89,7 +91,6 @@ public class DataNodeManager implements Runnable{
         } finally {
             workerGroup.shutdownGracefully();
             bossGroup.shutdownGracefully();
-//            businessGroup.shutdownGracefully();
         }
 
     }
