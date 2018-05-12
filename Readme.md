@@ -45,7 +45,28 @@ NameNode失效则整个系统不可用
 
 开发优先级：3、1、4、2
 
-具体性能瓶颈要结合压测来分析
+具体性能瓶颈要结合压测来分析:
+
+开启1个NameNode和1个DataNode直接压测，3次
+
+redis-benchmark -h 127.0.0.1 -p 10100 -c 100 -t set -q
+- SET: 5006.76 requests per second
+- SET: 5063.55 requests per second
+- SET: 5123.74.55 requests per second
+
+
+以上把2个节点日志级别都调整为info，重启
+
+redis-benchmark -h 127.0.0.1 -p 10100 -c 100 -t set -q
+- SET: 62421.97 requests per second
+- SET: 87260.03 requests per second
+- SET: 92592.59 requests per second
+- SET: 94517.96 requests per second
+
+可见日志对性能影响很大，生产环境一定要注意日志级别；
+此外观察，不重启的话，每次测试间隔如果很小，指标呈现递增趋势，
+稍微休息10秒钟再次测试的话，又会降到底部，然后依次上升，这应该是和concurrentHashMap分配有关
+经过数次测试，rps最高值达到 100401.61
 
     
 ## 使用方法 ##
