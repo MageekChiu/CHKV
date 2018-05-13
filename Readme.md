@@ -134,7 +134,7 @@ Client代码示例[在此，关键如下：][4]
 
 经数十次测试，**qps** 稳定在 **128k** 附近，最高 **132.3k** ，最低 **122.7k** 可见**CHKV**的单个 **DataNode** 目前性能还比不过单个 **redis**。
 
-经过重构DataNode后，现在是压测结果如下
+DataNode经过重构后，现在的压测结果如下
 
 `redis-benchmark -h 127.0.0.1 -p 6379 -c 100 -t set -q`
 
@@ -150,20 +150,7 @@ Client代码示例[在此，关键如下：][4]
 **DataNode** 通过 `public static volatile Map<String,String> DATA_POOL` 共享数据池，其他相关操作类减少了这个域，省一些内存；
 第一条对比明显，很容易直接测试，第二条没直接测，只是分析。
 
-C:\Users\Administrator>
 
-C:\Users\Administrator>redis-benchmark -h 127.0.0.1 -p 10100 -c 100 -t set -q
-SET: 127551.02 requests per second
-
-
-C:\Users\Administrator>redis-benchmark -h 127.0.0.1 -p 10100 -c 100 -t set -q
-SET: 127064.80 requests per second
-
-
-C:\Users\Administrator>
-
-
-C:\Users\Administrator>
 
 ## 未来工作 ##
 
