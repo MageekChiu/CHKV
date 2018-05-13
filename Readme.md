@@ -116,13 +116,13 @@ Client代码示例[在此，关键如下：][4]
 - SET: 92592.59 requests per second
 - SET: 94517.96 requests per second
 
-可见日志对**qps**影响很大，是 **几k **与 **几十k** 的不同数量级的概念，若把级别改成error，**平均qps**还能提升几k，所以生产环境一定要注意日志级别；
+可见日志对**qps**影响很大，是 **几k** 与 **几十k** 的不同数量级的概念，若把级别改成error，**平均qps**还能提升 **几k**，所以生产环境一定要注意日志级别；
 
 此外观察，不重启并且每次压测间隔都很小的话，qps一般会从 **65k** 附近开始，经过1、2次的 **88k** 左右，最终稳定在 **98k** 附近，数十次测试，最低 **62.4k**，最高**101.2k**；
 
-重启的话，**qps**就会重复上述变化过程，这应该是和内存分配有关，第一次压测需要大量的初始化工作，而后面就不必了，所以第一次**qps**都比较低；
+重启的话，**qps**就会重复上述变化过程，这应该是和内存分配有关，第1次压测需要大量的初始化工作，而后面就不必了，所以第一次**qps**都比较低；
 
-经观察，DataNode进程启动后，内存在59M附近，第1次压测飙升到134M然后稳定到112M，第二次上升到133M然后稳定到116M，最后每次压测内存都是先增加几M然后减小更多，最终稳定在76M。
+经观察，DataNode进程启动后，内存消耗在59M附近，第1次压测飙升到134M然后稳定到112M，第2次上升到133M然后稳定到116M，后面每次压测内存都是先增加几M然后减小更多，最终稳定在76M。
 
 在本机运行一个redis-server进程，然后压测一下
 
@@ -132,7 +132,38 @@ Client代码示例[在此，关键如下：][4]
 - SET: 130208.34 requests per second
 - SET: 132450.33 requests per second
 
-经数十次测试，**qps** 稳定在 **128k** 附近，最高 **132.3k** 最低 **122.7k** 可见**CHKV**的单个 **DataNode** 目前性能还比不过单个 **redis**，
+经数十次测试，**qps** 稳定在 **128k** 附近，最高 **132.3k** ，最低 **122.7k** 可见**CHKV**的单个 **DataNode** 目前性能还比不过单个 **redis**。
+
+经过重构DataNode后，现在是压测结果如下
+
+`redis-benchmark -h 127.0.0.1 -p 6379 -c 100 -t set -q`
+
+- SET: 78554.59 requests per second
+- SET: 114285.71 requests per second
+- SET: 119047.63 requests per second
+- SET: 123628.14 requests per second
+
+经过多次测试，**qps** 稳定在 **122k** 附近，最高 **128.4k** ，最低 **78.6k**（这是启动后第一次压测的特例，后期稳定时最低是 **108k**），可见重构后
+单个 **DataNode** 和单个 **redis-server** 的 **qps** 差距已经只有 **几k** 了，优化效果还是比较明显的。
+
+主要优化两个：去掉单独的 **BusinessHandler** 的单独逻辑线程，因为没有耗时操作，直接在IO线程操作反而能省掉切换时间；
+**DataNode** 通过 `public static volatile Map<String,String> DATA_POOL` 共享数据池，其他相关操作类减少了这个域，省一些内存；
+第一条对比明显，很容易直接测试，第二条没直接测，只是分析。
+
+C:\Users\Administrator>
+
+C:\Users\Administrator>redis-benchmark -h 127.0.0.1 -p 10100 -c 100 -t set -q
+SET: 127551.02 requests per second
+
+
+C:\Users\Administrator>redis-benchmark -h 127.0.0.1 -p 10100 -c 100 -t set -q
+SET: 127064.80 requests per second
+
+
+C:\Users\Administrator>
+
+
+C:\Users\Administrator>
 
 ## 未来工作 ##
 

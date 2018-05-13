@@ -9,6 +9,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import static cn.mageek.datanode.main.DataNode.countDownLatch;
+
 /**
  * @author Mageek Chiu
  * @date 2018/3/7 0007:20:24
@@ -16,13 +18,7 @@ import java.util.concurrent.TimeUnit;
 public class CronJobManager implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(CronJobManager.class);
-    private static ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(2);
-
-    private CountDownLatch countDownLatch;
-
-    public CronJobManager(CountDownLatch countDownLatch) {
-        this.countDownLatch = countDownLatch;
-    }
+    private static ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
 
 
     public void run() {

@@ -29,12 +29,10 @@ public class BusinessHandler extends ChannelInboundHandlerAdapter {
 //            logger.debug("command:{}",command.getClass().getName());
             logger.debug("dataRequest:{}",dataRequest);
             DataResponse dataResponse = command.receive(dataRequest);// 处理请求 获得响应
-            if (dataResponse!=null){//如果需要响应操作
-                dataResponse.setID(dataRequest.getID());//设置响应ID
-                logger.debug("dataResponse:{}",dataResponse);
-                ctx.writeAndFlush(dataResponse);//从当前位置往上找outBound
-//                 ctx.channel().writeAndFlush(dataResponse);//从最底部找outBound
-            }
+            dataResponse.setID(dataRequest.getID());//设置响应ID
+            logger.debug("dataResponse:{}",dataResponse);
+            ctx.writeAndFlush(dataResponse);//从当前位置往上找outBound
+
         }catch (Exception e){
             logger.error("parse data :{} , from: {} , error: ", obj,ctx.channel().remoteAddress(),e);
         }

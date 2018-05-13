@@ -8,7 +8,6 @@ import cn.mageek.datanode.service.DataManager;
 import cn.mageek.datanode.service.CronJobManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.net.ServerSocket;
@@ -17,9 +16,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
-
-import static cn.mageek.common.res.Constants.offlineKey;
-import static cn.mageek.common.res.Constants.onlineValue;
 import static cn.mageek.common.util.PropertyLoader.load;
 
 /**
@@ -32,21 +28,26 @@ import static cn.mageek.common.util.PropertyLoader.load;
 public class DataNode {
 
     private static final Logger logger = LoggerFactory.getLogger(DataNode.class);
+    private static final String pid = ManagementFactory.getRuntimeMXBean().getName();
+    private static int offlinePort = 6666;// 默认值，可调
+    private static String offlineCmd = "k";
+
     //本节点的数据存储，ConcurrentHashMap 访问效率高于 ConcurrentSkipListMap，但是转移数据时就需要遍历而不能直接排序了，考虑到转移数据情况并不多，访问次数远大于转移次数，所以就不用ConcurrentSkipListMap
 //    private static volatile Map<String,String> DATA_POOL = new ConcurrentHashMap<>(1024) ;// 被置为null 则意味着节点该下线了
-    private static volatile Map<String,String> DATA_POOL = new ConcurrentHashMap<>(1024) ;// 其他对象都有自己的引用实例域DATA_POOL，把他们的域置为null并不会使这个域DATA_POOL为null，所以要改变对象本身
+    public static volatile Map<String,String> DATA_POOL = new ConcurrentHashMap<>(1024) ;// 其他对象都有自己的引用实例域DATA_POOL，把他们的域置为null并不会使这个域DATA_POOL为null，所以要改变对象本身
+    public static volatile CountDownLatch countDownLatch;//任务个数
 
-    private static String pid = ManagementFactory.getRuntimeMXBean().getName();
-    private static int offlinePort = 6666;
-    private static String offlineCmd = "k";
+
 
     public static void main(String[] args){
         Thread currentThread = Thread.currentThread();
         currentThread.setName(("DataNode"+Math.random()*100).substring(0,10));
         String threadName = currentThread.getName();
         logger.debug("current thread {}" ,threadName);
+
         Thread dataManager,cronJobManager;
-        int jobNumber = 2;
+        int jobNumber = 2;countDownLatch = new CountDownLatch(jobNumber);
+
         try(InputStream in = ClassLoader.class.getResourceAsStream("/app.properties")){
             Properties pop = new Properties(); pop.load(in);
             offlinePort = Integer.parseInt(load(pop,"offline.port")); //下线监听端口
@@ -56,19 +57,21 @@ public class DataNode {
             // 初始化命令对象
 //            DATA_POOL.put("clientPort",clientPort);// 有了这一句下面才是DATA_POOL:1132277150,1。否则就是 DATA_POOL:0,0
 //            logger.debug("DATA_POOL:{},{}",DATA_POOL.hashCode(),DATA_POOL.size());
-            CommandFactory.construct(DATA_POOL);// 所有command都是单例对象，共享这一个数据池（ConcurrentHashMap）
+//            CommandFactory.construct(DATA_POOL);// 所有command都是单例对象，共享这一个数据池（ConcurrentHashMap）
+            CommandFactory.construct();// 所有command都是单例对象
 
             // 初始化任务对象
-            JobFactory.construct(DATA_POOL);// 任务也可能用到数据池
+//            JobFactory.construct(DATA_POOL);// 任务也可能用到数据池
+            JobFactory.construct();
 
             //放入一些数据 做测试
-            DATA_POOL.put(offlineKey,onlineValue);// 在线标志
+//            DATA_POOL.put(offlineKey,onlineValue);// 在线标志
             for (int i = 1 ; i <= 25 ; i++ ) DATA_POOL.put(threadName+i,threadName);
 
-            CountDownLatch countDownLatch = new CountDownLatch(jobNumber);
+
             // n 个线程分别启动 n 个服务
-            dataManager = new Thread(new DataManager(countDownLatch),"DataManager");dataManager.start();
-            cronJobManager = new Thread(new CronJobManager(countDownLatch),"CronJobManager");cronJobManager.start();
+            dataManager = new Thread(new DataManager(),"DataManager");dataManager.start();
+            cronJobManager = new Thread(new CronJobManager(),"CronJobManager");cronJobManager.start();
 
             //等待其他几个线程完全启动，然后才能对外提供服务
             countDownLatch.await();
@@ -143,12 +146,12 @@ public class DataNode {
         Heartbeat heartbeat = (Heartbeat) JobFactory.getJob("Heartbeat");
         heartbeat.run1(HeartbeatType.OFFLINE);// heartbeat对象的连接早已打开并且由定时任务一直保持着，所以主线程直接发起下线请示与数据转移工作
 
-//        while (DATA_POOL != null){
-
-        while (DATA_POOL.getOrDefault(offlineKey,onlineValue).equals(onlineValue)){// 依然在线
+        while (DATA_POOL != null){// 依然在线
+//        while (DATA_POOL.getOrDefault(offlineKey,onlineValue).equals(onlineValue)){// 依然在线
             Thread.sleep(5000);// 睡5秒再检查
             logger.debug("WAITTING for dataTransfer to complete");
         }
+        // 数据已转移完毕并清空，可以下线
         logger.info("DataNode can be safely shutdown now,{}",pid);// DATA_POOL == null，数据转移完成，可以让运维手动关闭本进程了
     }
 

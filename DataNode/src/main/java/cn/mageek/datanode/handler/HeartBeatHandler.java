@@ -11,6 +11,7 @@ import java.util.Map;
 
 import static cn.mageek.common.res.Constants.offlineKey;
 import static cn.mageek.common.res.Constants.offlineValue;
+import static cn.mageek.datanode.main.DataNode.DATA_POOL;
 
 /**
  * @author Mageek Chiu
@@ -18,16 +19,16 @@ import static cn.mageek.common.res.Constants.offlineValue;
  */
 public class HeartBeatHandler extends ChannelInboundHandlerAdapter {
     private static final Logger logger = LoggerFactory.getLogger(HeartBeatHandler.class);
-
-    private String clientIP;
-    private String clientPort;
-    private Map<String,String> DATA_POOL ;// 数据存储池
-
-    public HeartBeatHandler(String clientIP, String clientPort, Map<String, String> DATA_POOL) {
-        this.clientIP = clientIP;
-        this.clientPort = clientPort;
-        this.DATA_POOL = DATA_POOL;
-    }
+//
+//    private String clientIP;
+//    private String clientPort;
+//    private Map<String,String> DATA_POOL ;// 数据存储池
+//
+//    public HeartBeatHandler(String clientIP, String clientPort, Map<String, String> DATA_POOL) {
+//        this.clientIP = clientIP;
+//        this.clientPort = clientPort;
+//        this.DATA_POOL = DATA_POOL;
+//    }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
@@ -62,22 +63,24 @@ public class HeartBeatHandler extends ChannelInboundHandlerAdapter {
 
     private void handleResponse(HeartbeatResponse response){
         DataTransfer dataTransfer = null;
+        String IPPort = response.getIPPort();
         if (response.isOk()){// 继续运行
-            if (response.getIPPort()!=null){
+            if (IPPort!=null){
                 logger.info("DataNode 需要转移部分数据给上一个节点");
                 dataTransfer = (DataTransfer) JobFactory.getJob("DataTransfer");
-                dataTransfer.connect(response.getIPPort(),false);
+                dataTransfer.connect(IPPort,false);
             }else{
-                logger.debug("DataNode不需要转移数据");
+                logger.debug("DataNode 不需要转移数据");
             }
-        }else{
-            if (response.getIPPort()!=null){
-                logger.info("DataNode 不再运行，数据全部迁移给下一个节点");
+        }else{// 不再运行
+            if (IPPort!=null){
+                logger.info("DataNode 数据全部迁移给下一个节点,{}",IPPort);
                 dataTransfer = (DataTransfer) JobFactory.getJob("DataTransfer");
-                dataTransfer.connect(response.getIPPort(),true);
+                dataTransfer.connect(IPPort,true);
             }else{
-                logger.debug("DataNode 最后一台下线，不需要转移数据");
-                DATA_POOL.put(offlineKey,offlineValue);// 下线
+                logger.info("DataNode 最后一台下线，不需要转移数据");
+//                DATA_POOL.put(offlineKey,offlineValue);// 下线
+                DATA_POOL = null;
             }
         }
 

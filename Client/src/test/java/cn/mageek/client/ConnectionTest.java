@@ -25,8 +25,8 @@ public class ConnectionTest {
         logger.debug(client.set("112","23")+"");
         logger.debug(client.del("1321")+"");
         logger.debug(client.del("112")+"");
-//
-//        client.close();
+
+        client.close();
 
 
 

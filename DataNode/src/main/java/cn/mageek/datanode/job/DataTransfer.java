@@ -18,6 +18,7 @@ import java.net.InetSocketAddress;
  * @date 2018/5/7 0007:10:44
  */
 public class DataTransfer extends DataRunnable{
+//public class DataTransfer implements Runnable{
     private static final Logger logger = LoggerFactory.getLogger(DataTransfer.class);
 
     private boolean isAll;
@@ -43,7 +44,8 @@ public class DataTransfer extends DataRunnable{
                         ChannelPipeline p = ch.pipeline();
 //                        p.addLast(new ObjectDecoder(2048, ClassResolvers.cacheDisabled(this.getClass().getClassLoader())));// in 进制缓存类加载器
 //                        p.addLast(new ObjectEncoder());// out
-                        p.addLast(businessGroup,"DataTransferHandler",new DataTransferHandler(dataNodeIPPort,DATA_POOL,isAll));// in
+//                        p.addLast(businessGroup,"DataTransferHandler",new DataTransferHandler(dataNodeIPPort,DATA_POOL,isAll));// in
+                        p.addLast(businessGroup,"DataTransferHandler",new DataTransferHandler(dataNodeIPPort,isAll));// in
                     }
                 });
         try {

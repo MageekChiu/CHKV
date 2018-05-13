@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static cn.mageek.common.model.LineType.NEXT_LEN;
+import static cn.mageek.datanode.main.DataNode.DATA_POOL;
 
 
 /**
@@ -14,11 +15,11 @@ import static cn.mageek.common.model.LineType.NEXT_LEN;
  */
 public class CommandGET extends AbstractDataNodeCommand {
 
-    private static final Logger logger = LoggerFactory.getLogger(CommandGET.class);
+//    private static final Logger logger = LoggerFactory.getLogger(CommandGET.class);
 
     @Override
     public DataResponse receive(DataRequest dataRequest) {
-        String answer = this.DATA_POOL.get(dataRequest.getKey());
+        String answer = DATA_POOL.get(dataRequest.getKey());
         if(answer==null) return new DataResponse(NEXT_LEN,"-1");
         return new DataResponse(NEXT_LEN,answer);
     }

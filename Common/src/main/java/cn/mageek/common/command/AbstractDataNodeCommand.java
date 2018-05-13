@@ -15,18 +15,17 @@ import java.util.Map;
  */
 public abstract class AbstractDataNodeCommand {
 
-    public Map<String,String> DATA_POOL;// 所有command都引用这一个map，而且多线程，所以要用ConcurrentHashMap
-    private static final Logger logger = LoggerFactory.getLogger(AbstractDataNodeCommand.class);
+//    public Map<String,String> DATA_POOL;// 所有command都引用这一个map，而且多线程，所以要用ConcurrentHashMap
 
+    // 设置数据存储池
+//    public void setDataPool(Map<String, String> dataPool){
+//        this.DATA_POOL = dataPool;
+////        logger.debug("AbstractDataNodeCommand DATA_POOL initialized:{}",DATA_POOL.hashCode());
+//    }
 
     // 处理收到来自客户端的消息，返回需要响应的消息，若无则返回null
     public abstract DataResponse receive(DataRequest dataRequest);
     // 根据参数返回发送给客户端的消息
     public abstract DataResponse send(WebMsgObject webMsgObject);
-    // 设置数据存储池
-    public void setDataPool(Map<String, String> dataPool){
-        this.DATA_POOL = dataPool;
-//        logger.debug("AbstractDataNodeCommand DATA_POOL initialized:{}",DATA_POOL.hashCode());
-    }
 
 }

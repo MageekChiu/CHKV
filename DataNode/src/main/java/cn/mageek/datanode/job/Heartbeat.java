@@ -28,6 +28,8 @@ import static cn.mageek.common.util.PropertyLoader.load;
  * @date 2018/5/7 0007:10:44
  */
 public class Heartbeat extends DataRunnable{
+//public class Heartbeat implements Runnable{
+
     private static final Logger logger = LoggerFactory.getLogger(Heartbeat.class);
 
     private static String nameNodeIP;
@@ -65,8 +67,7 @@ public class Heartbeat extends DataRunnable{
 
     }
     @Override
-    public void connect(Map<String,String> dataPool){
-        this.DATA_POOL = dataPool;
+    public void connect(){
         EventLoopGroup group = new NioEventLoopGroup();
         Bootstrap b = new Bootstrap();
         b.group(group)
@@ -78,7 +79,7 @@ public class Heartbeat extends DataRunnable{
                         ChannelPipeline p = ch.pipeline();
                         p.addLast(new ObjectDecoder(2048, ClassResolvers.cacheDisabled(this.getClass().getClassLoader())));// in 进制缓存类加载器
                         p.addLast(new ObjectEncoder());// out
-                        p.addLast("HeartBeatHandler",new HeartBeatHandler(clientIP,clientPort,DATA_POOL));// in
+                        p.addLast("HeartBeatHandler",new HeartBeatHandler());// in
                     }
                 });
         try {

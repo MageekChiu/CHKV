@@ -49,7 +49,7 @@ public class DataNodeHeartBeatHandler extends ChannelInboundHandlerAdapter {
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         String connection = ctx.channel().remoteAddress().toString();
         HeartbeatRequest request = (HeartbeatRequest)msg ;
-        logger.debug("NameNode received: {}" , request);
+//        logger.debug("NameNode received: {}" , request);
         HeartbeatResponse response = handleStatus(connection,request);
         logger.debug("NameNode answered: {}" , response);
         ctx.writeAndFlush(response);

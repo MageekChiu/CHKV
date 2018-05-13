@@ -42,7 +42,7 @@ public class Decoder {
 
         List<DataRequest> dataRequestList = new LinkedList<>();
 
-        String[] msgs = s.split(outterSplit);// 多个命令之间用 \t\n 分割  // 这个不属于redis，是我为了自己方便加的
+        String[] msgs = s.split(outerSplit);// 多个命令之间用 \t\n 分割  // 这个不属于redis，是我为了自己方便加的
         logger.debug("Decoder 获得 {} 条命令",msgs.length);
         for (String msg : msgs) {
             String[] strings = msg.split(innerSplit);// 单个命令内部用 \r\n 分割
@@ -83,7 +83,7 @@ public class Decoder {
     public static DataResponse bytesToDataResponse(ByteBuf in) throws Exception{
 
         String data = in.toString(CharsetUtil.UTF_8);
-        String[] datas = data.split(outterSplit);
+        String[] datas = data.split(outerSplit);
         String ID = "";
         if (datas.length>1){// 是client发出的请求
 //            logger.debug("Client:{},{},{}",data,datas[0],datas[1]);

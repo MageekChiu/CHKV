@@ -19,9 +19,7 @@ public class CommandCOMMAND extends AbstractDataNodeCommand {
 
     @Override
     public DataResponse receive(DataRequest dataRequest) {
-        String oldValue = this.DATA_POOL.remove(dataRequest.getKey());//
-        if (oldValue==null) return new DataResponse(INT_NUM,"0");// 不存在
-        return new DataResponse(INT_NUM,"1");// 成功删除
+        return new DataResponse(INT_NUM,"1");//
     }
 
     @Override

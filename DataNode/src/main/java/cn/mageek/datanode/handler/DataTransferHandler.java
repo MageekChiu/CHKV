@@ -22,6 +22,7 @@ import static cn.mageek.common.res.Constants.offlineKey;
 import static cn.mageek.common.res.Constants.offlineValue;
 import static cn.mageek.common.res.Constants.pageSize;
 import static cn.mageek.common.util.ConsistHash.getHash;
+import static cn.mageek.datanode.main.DataNode.DATA_POOL;
 
 
 /**
@@ -32,17 +33,23 @@ import static cn.mageek.common.util.ConsistHash.getHash;
 public class DataTransferHandler  extends ChannelInboundHandlerAdapter {
     private static final Logger logger = LoggerFactory.getLogger(DataTransferHandler.class);
 
-    private final Map<String,String> DATA_POOL ;// 数据存储池
+//    private final Map<String,String> DATA_POOL ;// 数据存储池
     private boolean isAll;
     private String dataNodeIPPort;
 //    private AtomicInteger okNumber;
 
 
-    public DataTransferHandler(String dataNodeIPPort,Map<String, String> DATA_POOL,boolean isAll) {
-        this.DATA_POOL = DATA_POOL;
+//    public DataTransferHandler(String dataNodeIPPort,Map<String, String> DATA_POOL,boolean isAll) {
+//        this.DATA_POOL = DATA_POOL;
+//        this.isAll = isAll;
+//        this.dataNodeIPPort = dataNodeIPPort;
+//    }
+
+    public DataTransferHandler(String dataNodeIPPort,boolean isAll) {
         this.isAll = isAll;
         this.dataNodeIPPort = dataNodeIPPort;
     }
+
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
 //        logger.debug("DataTransferHandler instance {},dataPool {}", this ,DATA_POOL);// instance 每次不一样，但是加上这一句下面的DATA_POOL 就不是空了,然后再注释掉也行了，很奇怪
@@ -76,7 +83,7 @@ public class DataTransferHandler  extends ChannelInboundHandlerAdapter {
 
         List<DataRequest> requests = new ArrayList<>();
         String SET = "SET";
-        DATA_POOL.remove(offlineKey);// 标记不能转移给其他节点
+//        DATA_POOL.remove(offlineKey);// 标记不能转移给其他节点
         if (isAll){// 转移全部数据给下一个节点
             DATA_POOL.forEach((k,v)->{
                 requests.add(new DataRequest(SET,k,v));
@@ -122,7 +129,8 @@ public class DataTransferHandler  extends ChannelInboundHandlerAdapter {
                     logger.info("dataTransfer completed");
                     channel.close();//断开连接就好,dataTransfer自然结束
                     if (isAll){
-                        DATA_POOL.put(offlineKey,offlineValue);// 可以下线了，整个DataNode下线
+//                        DATA_POOL.put(offlineKey,offlineValue);// 可以下线了，整个DataNode下线
+                        DATA_POOL = null;
                     }
                 }
             });

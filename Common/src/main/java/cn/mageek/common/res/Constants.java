@@ -6,7 +6,7 @@ package cn.mageek.common.res;
  */
 public class Constants {
     public static final String innerSplit = "\r\n";// 一个命令内部行之间间隔
-    public static final String outterSplit = "\t\n";// 不同命令间隔
+    public static final String outerSplit = "\t\n";// 不同命令间隔
 
     public static final double pageSize = 5;// 一次转移几条数据
 

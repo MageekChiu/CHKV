@@ -1,6 +1,7 @@
 package cn.mageek.client.handler;
 
 import cn.mageek.client.Connection;
+import cn.mageek.common.model.WatchRequest;
 import cn.mageek.common.model.WatchResponse;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -24,6 +25,7 @@ public class WatchHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         logger.info("opened connection to: {}",ctx.channel().remoteAddress());
+//        ctx.writeAndFlush(new WatchRequest(true));// 上线立即发送请求
     }
 
     @Override

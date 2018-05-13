@@ -4,6 +4,7 @@ import cn.mageek.common.command.AbstractDataNodeCommand;
 import cn.mageek.common.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import static cn.mageek.datanode.main.DataNode.DATA_POOL;
 
 /**
  * 具体策略类
@@ -12,18 +13,12 @@ import org.slf4j.LoggerFactory;
  */
 public class CommandSET extends AbstractDataNodeCommand {
 
-    private static final Logger logger = LoggerFactory.getLogger(CommandSET.class);
+//    private static final Logger logger = LoggerFactory.getLogger(CommandSET.class);
 
     @Override
     public DataResponse receive(DataRequest dataRequest) {
-        try {
-//            logger.debug("DATA_POOL.size:{}",this.DATA_POOL.size());logger.debug("dataRequest:{}",dataRequest);
-            this.DATA_POOL.put(dataRequest.getKey(),dataRequest.getValue());
-            return new DataResponse(LineType.SINGLE_RIGHT,"OK");
-        }catch (Exception e){
-            logger.error("set error:",e);
-            return new DataResponse(LineType.SINGLE_ERROR,e.getMessage());
-        }
+        DATA_POOL.put(dataRequest.getKey(),dataRequest.getValue());
+        return new DataResponse(LineType.SINGLE_RIGHT,"OK");
     }
 
     @Override

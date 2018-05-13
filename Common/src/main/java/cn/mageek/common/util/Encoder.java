@@ -15,7 +15,7 @@ import java.util.List;
 import static cn.mageek.common.model.LineType.*;
 import static cn.mageek.common.res.Constants.IDSplitter;
 import static cn.mageek.common.res.Constants.innerSplit;
-import static cn.mageek.common.res.Constants.outterSplit;
+import static cn.mageek.common.res.Constants.outerSplit;
 
 /**
  * 出站数据编码
@@ -49,7 +49,7 @@ public class Encoder {
                 break;
         }
         if (ID.contains(IDSplitter)){// Client 发来的，需要补上ID
-            response += (outterSplit+ID);
+            response += (outerSplit +ID);
         }
 //        logger.debug("response:{}",response);
         return Unpooled.copiedBuffer(response,CharsetUtil.UTF_8);
@@ -81,11 +81,11 @@ public class Encoder {
                     break;
             }
             request += (dataRequest.getID()+innerSplit);// 补上ID，但是就不加字符长度了，不属于redis
-            request += outterSplit;// 补上多条命令之间的分隔符
+            request += outerSplit;// 补上多条命令之间的分隔符
             requests.append(request);
         }
         String finalString = requests.toString();
-//        finalString = finalString.substring(0,finalString.length()-outterSplit.length());// 去掉最后一个 outterSplit
+//        finalString = finalString.substring(0,finalString.length()-outerSplit.length());// 去掉最后一个 outerSplit
 //        logger.debug("final dataRequests string {},length:{},request num:{}",finalString,finalString.length(),dataRequests.size());
         return Unpooled.copiedBuffer(finalString,CharsetUtil.UTF_8);
     }

@@ -88,23 +88,23 @@ public class Connection implements AutoCloseable {
             nameNodeChannel.writeAndFlush(new WatchRequest(true));// 立即请求获得hash 环
             heartbeat = new Thread(() -> {
                 while (running){// 没有被中断就持续发送心跳，中断就结束心跳线程
-                    nameNodeChannel.writeAndFlush(watchRequest);
-                    logger.debug("send nameNode heartbeat:{},hash ring :{}",watchRequest,sortedServerMap);
                     try {
                         Thread.sleep(20000);
                     } catch (InterruptedException e) {
                         logger.debug("nameNode heartbeat InterruptedException,{}",e.getMessage());
                     }
+                    nameNodeChannel.writeAndFlush(watchRequest);
+                    logger.debug("send nameNode heartbeat:{},hash ring :{}",watchRequest,sortedServerMap);
                 }
             },"heartbeat");
             heartbeat.start();
-            while (sortedServerMap.isEmpty()){}// 阻塞至 有 dataNode 可用，保证connect返回成功的含义
             logger.debug("nameNode connection established and Heartbeat started");
             ChannelFuture f1 = nameNodeChannel.closeFuture();
             f1.addListener((ChannelFutureListener) channelFuture -> {// 监听连接关闭事件
-                logger.debug("nameNode Connection connection closed");
                 group.shutdownGracefully();// 必须shutdown
+                logger.info("nameNode Connection connection closed");
             });// 异步回调，避免阻塞
+            while (sortedServerMap.isEmpty()){}// 阻塞至 有 dataNode 可用，保证connect返回成功的含义，没有DataNode，connect就一直忙等待
         } catch (InterruptedException e) {
             logger.debug("nameNode connection InterruptedException",e);
             running = false;
@@ -119,16 +119,15 @@ public class Connection implements AutoCloseable {
         running = false;heartbeat.interrupt();// 停止心跳
         dataNodeChannelList.forEach((IPPort, channel)-> {
             if (channel.isOpen()){
-                logger.debug("dataNode {} connection isOpen",IPPort);
+//                logger.debug("dataNode {} connection isOpen",IPPort);
                 channel.close();
             }
             else {
-                logger.debug("dataNode {} connection already closed",IPPort);
+//                logger.debug("dataNode {} connection already closed",IPPort);
             }
             logger.debug("dataNode {} connection closed",IPPort);
         }); // 关闭所有DataNode连接
         nameNodeChannel.close(); // 关闭NameNode连接
-        logger.debug("all closed");
     }
 
 
@@ -184,6 +183,7 @@ public class Connection implements AutoCloseable {
             logger.error("no available DataNode");
             return noDataNode;
         }
+//        logger.debug("Hash Circle",sortedServerMap);
 
         String IPPort = getServer(sortedServerMap,request.getKey(),false);
         String[] strings = IPPort.split(":");
