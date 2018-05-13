@@ -2,7 +2,6 @@
 
 基于[一致性哈希][5]的分布式内存键值存储——CHKV。
 
-
 ## 系统设计 ##
 
 - **NameNode** : 维护key与节点的映射关系（Hash环），用心跳检测DataNode（一般被动，被动失效时主动询问三次），节点增减等系统信息变化时调整数据并通知Client；
@@ -17,7 +16,6 @@ NameNode失效则整个系统不可用
 
 
 客户要使用**CHKV**就必须使用Client库或者自己依据协议（兼容redis）实现，可以是多种语言的API。
-
 
 ## 分析 ##
 
@@ -45,53 +43,7 @@ NameNode失效则整个系统不可用
 
 开发优先级：3、1、4、2
 
-具体性能瓶颈要结合压测来分析:
-
-开启1个NameNode和1个DataNode直接压测，3次
-
-redis-benchmark -h 127.0.0.1 -p 10100 -c 100 -t set -q
-- SET: 5006.76 requests per second
-- SET: 5063.55 requests per second
-- SET: 5123.74.55 requests per second
-
-
-以上把2个节点日志级别都调整为info，重启
-
-redis-benchmark -h 127.0.0.1 -p 10100 -c 100 -t set -q
-- SET: 62421.97 requests per second
-- SET: 87260.03 requests per second
-- SET: 92592.59 requests per second
-- SET: 94517.96 requests per second
-
-可见日志对性能影响很大，生产环境一定要注意日志级别；
-此外观察，不重启的话，每次测试间隔如果很小，指标呈现递增趋势，
-稍微休息10秒钟再次测试的话，又会降到底部，然后依次上升，这应该是和concurrentHashMap分配有关
-经过数次测试，rps最高值达到 100401.61
-
-    
-## 使用方法 ##
-
-**DataNode** 运行起来就可以直接使用 **redis-cli** 连接，如`redis-cli -h 127.0.0.1 -p 10100`，并进行`set、get、del`操作；
-
-注意：现在必须首先运行 **NameNode**，然后通过JVM参数的方式调整端口，可以在同一台机器上运行多个 **DataNode**，
-若要在不同机器上运行 **DataNode** 则可以直接修改配置文件
-
-新的DataNode可以直接上线，NameNode会自动通知下一个节点转移相应数据给新节点；DataNode若要下线，
-则可以通过telnet DataNode 节点的下线监听端口（TCP监听） 如 `telnet 127.0.0.1 6666` ，
-并发送 **k** 字符即可，待下线的DataNode收到命令 **k** 后会自动把数据全部转移给下一个DataNode
-然后提示进程pid，用户就可以关闭该DataNode进程了，如 **Linux**： `kill -s 9 23456`，**Windows**:`taskkill /pid 23456`
-
-NameNode和DataNode启动后就可以使用Client了，代码示例如下：
-
-Client代码示例[在此，关键如下：][4]
-
-        try(Client client = new Client("192.168.0.136","10102")){
-            logger.debug(client.set("192.168.0.136:10099","123456")+"");
-            logger.debug(client.get("192.168.0.136:10099")+"");
-            logger.debug(client.set("112","23")+"");
-            logger.debug(client.del("1321")+"");
-            logger.debug(client.del("112")+"");
-        }
+具体性能要结合压测来分析。
 
 ## 代码结构 ##
 
@@ -120,8 +72,71 @@ Client代码示例[在此，关键如下：][4]
     - model : 一些公用的pojo，如请求响应对象 
     - util : 一些工具类 
     - helper : 辅助脚本
+        
+## 使用方法 ##
 
-水平有限，目前项目的问题还很多，可以列个清单：
+**DataNode** 运行起来就可以直接使用 **redis-cli** 连接，如`redis-cli -h 127.0.0.1 -p 10100`，并进行`set、get、del`操作；
+
+注意：现在必须首先运行 **NameNode**，然后通过JVM参数的方式调整端口，可以在同一台机器上运行多个 **DataNode**，
+若要在不同机器上运行 **DataNode** 则可以直接修改配置文件
+
+新的DataNode可以直接上线，NameNode会自动通知下一个节点转移相应数据给新节点；DataNode若要下线，
+则可以通过telnet DataNode 节点的下线监听端口（TCP监听） 如 `telnet 127.0.0.1 6666` ，
+并发送 **k** 字符即可，待下线的DataNode收到命令 **k** 后会自动把数据全部转移给下一个DataNode
+然后提示进程pid，用户就可以关闭该DataNode进程了，如 **Linux**： `kill -s 9 23456`，**Windows**:`taskkill /pid 23456`
+
+NameNode和DataNode启动后就可以使用Client了，代码示例如下：
+
+Client代码示例[在此，关键如下：][4]
+
+        try(Client client = new Client("192.168.0.136","10102")){
+            logger.debug(client.set("192.168.0.136:10099","123456")+"");
+            logger.debug(client.get("192.168.0.136:10099")+"");
+            logger.debug(client.set("112","23")+"");
+            logger.debug(client.del("1321")+"");
+            logger.debug(client.del("112")+"");
+        }
+
+## 压力测试 ##
+
+在本机开启1个NameNode和1个DataNode直接压测，4次
+
+`redis-benchmark -h 127.0.0.1 -p 10100 -c 100 -t set -q`
+- SET: 5006.76 requests per second
+- SET: 5056.43 requests per second
+- SET: 5063.55 requests per second
+- SET: 5123.74.55 requests per second
+
+
+把以上2个节点日志级别都调整为info（实际上DataNode节点才会影响qps），重启
+
+`redis-benchmark -h 127.0.0.1 -p 10100 -c 100 -t set -q`
+- SET: 62421.97 requests per second
+- SET: 87260.03 requests per second
+- SET: 92592.59 requests per second
+- SET: 94517.96 requests per second
+
+可见日志对**qps**影响很大，是 **几k **与 **几十k** 的不同数量级的概念，若把级别改成error，**平均qps**还能提升几k，所以生产环境一定要注意日志级别；
+
+此外观察，不重启并且每次压测间隔都很小的话，qps一般会从 **65k** 附近开始，经过1、2次的 **88k** 左右，最终稳定在 **98k** 附近，数十次测试，最低 **62.4k**，最高**101.2k**；
+
+重启的话，**qps**就会重复上述变化过程，这应该是和内存分配有关，第一次压测需要大量的初始化工作，而后面就不必了，所以第一次**qps**都比较低；
+
+经观察，DataNode进程启动后，内存在59M附近，第1次压测飙升到134M然后稳定到112M，第二次上升到133M然后稳定到116M，最后每次压测内存都是先增加几M然后减小更多，最终稳定在76M。
+
+在本机运行一个redis-server进程，然后压测一下
+
+`redis-benchmark -h 127.0.0.1 -p 6379 -c 100 -t set -q`
+- SET: 129032.27 requests per second
+- SET: 124533.27 requests per second
+- SET: 130208.34 requests per second
+- SET: 132450.33 requests per second
+
+经数十次测试，**qps** 稳定在 **128k** 附近，最高 **132.3k** 最低 **122.7k** 可见**CHKV**的单个 **DataNode** 目前性能还比不过单个 **redis**，
+
+## 未来工作 ##
+
+水平有限，目前项目的问题还很多，可以改进的地方还很多，先列个清单：
 
 - 高可用性保证
 - 断线重连
@@ -133,7 +148,7 @@ Client代码示例[在此，关键如下：][4]
 - 完整的校验机制
 - 等等......
 
-全部代码在[Github][1]上，欢迎 star，欢迎 issue，欢迎 pull request......
+全部代码在[Github][1]上，欢迎 **star**，欢迎 **issue**，欢迎 **fork**，欢迎 **pull request**......
 总之就是欢迎大家和我一起完善这个项目，一起进步。
 
 [戳此][2]看原文，来自[MageekChiu][3]
