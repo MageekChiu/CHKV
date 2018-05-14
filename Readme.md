@@ -137,21 +137,21 @@ Client代码示例[在此，关键如下：][4]
 
 DataNode经过重构后，现在的压测结果如下
 
-`redis-benchmark -h 127.0.0.1 -p 6379 -c 100 -t set -q`
+`redis-benchmark -h 127.0.0.1 -p 10100 -c 100 -t set -q`
 
 - SET: 78554.59 requests per second
 - SET: 114285.71 requests per second
 - SET: 119047.63 requests per second
 - SET: 123628.14 requests per second
 
-经过多次测试，**qps** 稳定在 **122k** 附近，最高 **128.4k** ，最低 **78.6k**（这是启动后第一次压测的特例，后期稳定时最低是 **108k**），可见重构后
-单个 **DataNode** 和单个 **redis-server** 的 **qps** 差距已经只有 **几k** 了，优化效果还是比较明显的。
+经过多次测试，**qps** 稳定在 **125k** 附近，最高 **131.9k** ，最低 **78.6k**（这是启动后第一次压测的特例，后期稳定时最低是 **114.3k**），可见重构后
+单个 **DataNode** 和单个 **redis-server** 的 **qps** 差距已经很小了，优化效果还是比较明显的。
 
 主要优化两个：去掉单独的 **BusinessHandler** 的单独逻辑线程，因为没有耗时操作，直接在IO线程操作反而能省掉切换时间；
 **DataNode** 通过 `public static volatile Map<String,String> DATA_POOL` 共享数据池，其他相关操作类减少了这个域，省一些内存；
 第一条对比明显，很容易直接测试，第二条没直接测，只是分析。
 
-然后通过` -Xint` 或者 `-Djava.compiler=NONE` 关闭 **JIT** 使用 **解释模式**，再压测试试
+然后通过` -Xint` 或者 `-Djava.compiler=NONE` 关闭 **JIT** 使用 **解释模式**，再压测试试。
 
 `redis-benchmark -h 127.0.0.1 -p 10100 -c 100 -t set -q`
 - SET: 16105.65 requests per second
@@ -161,7 +161,7 @@ DataNode经过重构后，现在的压测结果如下
 
 可见关闭 **JIT** 后 **qps** 降低了 **7倍多**，而且每次差别不大（即使是第一次），这也能说明上面（默认是**混合模式**）第一次压测的 **qps** 比后面低了那么多的原因确实和 **JIT** 有关。
 
-通过 `-Xcomp` 使用 **编译模式** ，启动会很慢
+通过 `-Xcomp` 使用 **编译模式** ，启动会很慢。
 
 `redis-benchmark -h 127.0.0.1 -p 10100 -c 100 -t set -q`
 - SET: 83612.04 requests per second
@@ -169,7 +169,47 @@ DataNode经过重构后，现在的压测结果如下
 - SET: 121802.68 requests per second
 - SET: 120048.02 requests per second
 
-可见 **编译模式** 并没有比 **混合模式** 效果好，因为即使是不热点的代码也要编译，反而浪费时间，所以一般还是选择默认的 **混合模式** 较好
+可见 **编译模式** 并没有比 **混合模式** 效果好，因为即使是不热点的代码也要编译，反而浪费时间，所以一般还是选择默认的 **混合模式** 较好。
+
+然后来验证**线程数、客户端操作**与 **qps** 的关系，实验机器是 `4 core、8 processor`，我把 **DataNode** 的 `DataManager` 中 `workerGroup`的线程数依次减少从 **8** 调到为 **1** （之前的测试都是4），
+发现 **qps** 先升后降，在值为 **2** 的时候达到最大值，**超过了redis**，下面是数据
+
+`redis-benchmark -h 127.0.0.1 -p 10100 -c 100 -t set -q`
+- SET: 93283.04 requests per second
+- SET: 141043.05 requests per second
+- SET: 145560.68 requests per second
+- SET: 145384.02 requests per second
+
+经数十次测试，**qps** 稳定在 **142k** 附近，最高 **150.6k** ，稳定后最低 **137.2k**。
+Netty本身使用了IO多路复用，在客户端操作都比较轻量（压测这个set也确实比较轻量）择时线程数较少是合理的，
+因为这时候线程切换的代价超过了多线程带来的好处，这样我们也能理解 **redis** 单线程设计的初衷了，
+单线程虽然有些极端，但是如果考虑面向快速轻量操作的客户端和单线程的安全与简洁特性，也是最佳的选择。
+
+但是如果客户端操作不是轻量级的，比如我们把 `set` 数据大小调为`500bytes`，再对 **CKHV** 不同的 `workerGroup`线程数进行压测
+
+2 `redis-benchmark -h 127.0.0.1 -p 10100 -c 100 -t set -d 500 -q`
+
+- SET: 80450.52 requests per second
+- SET: 102459.02 requests per second
+- SET: 108813.92 requests per second
+- SET: 99206.34 requests per second
+
+3 `redis-benchmark -h 127.0.0.1 -p 10100 -c 100 -t set -d 500 -q`
+- SET: 92592.59 requests per second
+- SET: 133868.81 requests per second
+- SET: 133868.81 requests per second
+- SET: 135685.22 requests per second
+
+4 `redis-benchmark -h 127.0.0.1 -p 10100 -c 100 -t set -d 500 -q`
+- SET: 72046.11 requests per second
+- SET: 106723.59 requests per second
+- SET: 114810.56 requests per second
+- SET: 119047.63 requests per second
+
+可见这个时候4、3个线程**qps**都大于2个线程，符合验证，但是4的**qps**又比3少，说明线程太多反而不好，
+然而把数据大小调到`900byte`时，4个线程又比3个线程的**qps**大了，
+所以这个参数真的要针对不同的应用场景做出不同的调整，总结起来就是轻量快速的操作适宜线程适当少，重量慢速操作适宜线程适当多。
+
 
 ## 未来工作 ##
 

@@ -45,9 +45,17 @@ public class DataManager implements Runnable{
     }
 
     public void run() {
-        // Configure the server.
+
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);//接收连接
-        EventLoopGroup workerGroup = new NioEventLoopGroup(4);//处理连接的I/O事件
+
+//        int workThread = Runtime.getRuntime().availableProcessors();
+//        int workThread = 5;
+//        int workThread = 3;
+        int workThread = 4;
+//        int workThread = 1;
+        logger.info("workThread,{}",workThread);
+        EventLoopGroup workerGroup = new NioEventLoopGroup(workThread);//处理连接的I/O事件
+
 //        EventExecutorGroup businessGroup = new DefaultEventExecutorGroup(8);//处理耗时业务逻辑，我实际上为了统一起见把全部业务逻辑都放这里面了
         try {
             ServerBootstrap b = new ServerBootstrap();
