@@ -41,11 +41,16 @@ public class Connection implements AutoCloseable {
 
     public ConcurrentSkipListMap<Integer, String> sortedServerMap =  new ConcurrentSkipListMap<>();// DataNode hash 环
 
-    private Channel nameNodeChannel;// NameNode Channel
+    private Channel nameNodeChannel = null;// NameNode Channel
     private Map<String,Channel> dataNodeChannelList = new ConcurrentHashMap<>();// ip:port -> channel // 保存DataNode连接
     private Thread heartbeat;// NameNode心跳线程
-    private volatile boolean running = true;
+    private volatile boolean running = true;// 是否继续运行
     private volatile Map<String ,DataResponse> dataResponseMap = new ConcurrentHashMap<>(1024);// 存放所有响应
+
+    private String nameNodeIP;
+    private String nameNodePort;
+    private EventLoopGroup group;
+    private Bootstrap b;
 
     /**
      * 仅仅构造
@@ -67,9 +72,11 @@ public class Connection implements AutoCloseable {
      * @param nameNodePort nameNodePort
      */
     public void connect(String nameNodeIP,String nameNodePort){
+        this.nameNodeIP = nameNodeIP;this.nameNodePort = nameNodePort;
         Connection instance = this;// 把本身传递给WatchHandler，便于更新 sortedServerMap
-        EventLoopGroup group = new NioEventLoopGroup();
-        Bootstrap b = new Bootstrap();
+
+        group = new NioEventLoopGroup();
+        b = new Bootstrap();
         b.group(group)
             .channel(NioSocketChannel.class)
             .remoteAddress(new InetSocketAddress(nameNodeIP, Integer.parseInt(nameNodePort)))
@@ -82,33 +89,33 @@ public class Connection implements AutoCloseable {
                     p.addLast(new WatchHandler(instance));// in
                 }
             });
-        try {
-            ChannelFuture f = b.connect().sync();// 阻塞等待连接建立成功
-            nameNodeChannel = f.channel();
-            nameNodeChannel.writeAndFlush(new WatchRequest(true));// 立即请求获得hash 环
-            heartbeat = new Thread(() -> {
-                while (running){// 没有被中断就持续发送心跳，中断就结束心跳线程
-                    try {
-                        Thread.sleep(20000);
-                    } catch (InterruptedException e) {
-                        logger.debug("nameNode heartbeat InterruptedException,{}",e.getMessage());
-                    }
-                    nameNodeChannel.writeAndFlush(watchRequest);
-                    logger.debug("send nameNode heartbeat:{},hash ring :{}",watchRequest,sortedServerMap);
-                }
-            },"heartbeat");
-            heartbeat.start();
-            logger.debug("nameNode connection established and Heartbeat started");
-            ChannelFuture f1 = nameNodeChannel.closeFuture();
-            f1.addListener((ChannelFutureListener) channelFuture -> {// 监听连接关闭事件
-                group.shutdownGracefully();// 必须shutdown
-                logger.info("nameNode Connection connection closed");
-            });// 异步回调，避免阻塞
-            while (sortedServerMap.isEmpty()){}// 阻塞至 有 dataNode 可用，保证connect返回成功的含义，没有DataNode，connect就一直忙等待
-        } catch (InterruptedException e) {
-            logger.debug("nameNode connection InterruptedException",e);
-            running = false;
-        }
+
+//      ChannelFuture f = b.connect().sync();// 阻塞等待连接建立成功
+        ChannelFuture f = b.connect();// sync连不上会直接抛出异常，要用listener才能实行重连
+        f.addListener((ChannelFutureListener) channelFuture -> {
+            if (channelFuture.isSuccess()){// 连接成功
+                nameNodeChannel = f.channel();
+                nameNodeChannel.writeAndFlush(new WatchRequest(true));// 立即请求获得hash 环
+
+                // 启动心跳线程
+                heartbeat = new Thread(new HeartBeat(),"heartbeat");
+                heartbeat.start();
+                logger.debug("nameNode connection established and Heartbeat started");
+
+                // 监听连接关闭事件
+                ChannelFuture f1 = nameNodeChannel.closeFuture();
+                f1.addListener((ChannelFutureListener) cf -> {
+                    group.shutdownGracefully();// 必须shutdown
+                    logger.info("nameNode Connection closed");
+                });
+            }else{// 连接失败，重连
+                logger.info("nameNode Connection failed, retrying");
+                Thread.sleep(3000);
+                connect(nameNodeIP,nameNodePort);
+            }
+        });
+        // 阻塞至 有 dataNode 可用，保证connect返回成功的含义，没有DataNode，connect就一直忙等待
+        while (sortedServerMap.isEmpty()){}
     }
 
     /**
@@ -207,5 +214,26 @@ public class Connection implements AutoCloseable {
     @Override
     public void close() throws Exception {// 与上面的含参构造函数搭配 就能使用 try-with-source
         disconnect();
+    }
+
+    class HeartBeat implements Runnable{
+        @Override
+        public void run() {
+            while (running){// 没有被中断就持续发送心跳，中断就结束心跳线程
+                try {
+                    Thread.sleep(10000);
+                } catch (InterruptedException e) {
+                    logger.debug("nameNode heartbeat InterruptedException,{}",e.getMessage());
+                }
+                if (nameNodeChannel!=null && nameNodeChannel.isActive()){
+                    nameNodeChannel.writeAndFlush(watchRequest);
+                    logger.debug("send nameNode heartbeat:{},hash ring :{}",watchRequest,sortedServerMap);
+                }else {
+                    logger.debug("nameNode heartbeat lost, retrying");
+                    connect(nameNodeIP,nameNodePort);
+                    break;// 重连成功后自然结束本线程
+                }
+            }
+        }
     }
 }
