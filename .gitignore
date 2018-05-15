@@ -28,3 +28,9 @@ hs_err_pid*
 *.iml
 out
 gen
+
+/Common/target/
+/Client/target/
+/DataNode/target/
+/NameNode/target/
+/target/
