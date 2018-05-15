@@ -20,4 +20,18 @@ public class PropertyLoader {
         return value;
     }
 
+    /**
+     * 获得工作线程数量
+     * @return
+     */
+    public static int loadWorkThread(Properties pop, String key){
+        int defaultNum = Runtime.getRuntime().availableProcessors()-1;
+        int loadNum = Integer.parseInt(load(pop,key));
+        return loadNum > 0 ? loadNum : defaultNum;// 如果配置小于0 则用默认值处理器数-1，大于0 就使用配置值
+
+    }
+
+
+
+
 }

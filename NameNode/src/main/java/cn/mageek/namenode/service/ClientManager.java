@@ -20,6 +20,8 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CountDownLatch;
 
+import static cn.mageek.common.util.PropertyLoader.load;
+import static cn.mageek.common.util.PropertyLoader.loadWorkThread;
 import static cn.mageek.namenode.main.NameNode.countDownLatch;
 
 /**
@@ -30,6 +32,8 @@ import static cn.mageek.namenode.main.NameNode.countDownLatch;
 public class ClientManager implements Runnable{
     private static final Logger logger = LoggerFactory.getLogger(DataNodeManager.class);
     private static String clientPort;
+    private static int clientThread;
+
 //    private ConcurrentSkipListMap<Integer, String> sortedServerMap;//管理所有datanode
 //    private Map<String,Channel> clientMap ;//管理所有clientMap
 //    private CountDownLatch countDownLatch;//
@@ -38,8 +42,9 @@ public class ClientManager implements Runnable{
         try( InputStream in = ClassLoader.class.getResourceAsStream("/app.properties")) {
             Properties pop = new Properties();
             pop.load(in);
-            clientPort = pop.getProperty("namenode.client.port");// 对client开放的端口
-//            logger.debug("config clientPort:{}", clientPort);
+            clientPort = load(pop,"namenode.client.port"); ;// 对client开放的端口
+            clientThread = loadWorkThread(pop,"namenode.client.workThread");
+            logger.debug("config clientPort:{},clientThread:{}", clientPort,clientThread);
         } catch (IOException e) {
             logger.error("read config error",e);
         }
@@ -54,7 +59,7 @@ public class ClientManager implements Runnable{
     public void run() {
         // Configure the server.
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);//接收连接
-        EventLoopGroup workerGroup = new NioEventLoopGroup(2);//处理连接的I/O事件
+        EventLoopGroup workerGroup = new NioEventLoopGroup(clientThread);//处理连接的I/O事件
         try {
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup)

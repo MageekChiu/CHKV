@@ -33,7 +33,7 @@ public class NameNode {
     public static volatile Map<String,String> dataNodeClientMap = new ConcurrentHashMap<>();//管理所有datanode 对client开放的IP与端口
 //    key表示dataNode的hash值，value表示其对客户端开放的ip:port  ， 发送心跳状态更新后就有
     public static volatile ConcurrentSkipListMap<Integer, String> sortedServerMap =  new ConcurrentSkipListMap<>();//管理所有datanode 对应 hash 和client开放的IP与端口，线程安全
-
+//    key表示client的/ip:port，value表示对应信道
     public static volatile Map<String,Channel> clientMap = new ConcurrentHashMap<>();//管理所有client 连接
 
     // 辅助参数

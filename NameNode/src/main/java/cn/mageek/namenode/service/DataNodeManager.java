@@ -18,6 +18,7 @@ import java.io.InputStream;
 import java.util.Properties;
 
 import static cn.mageek.common.util.PropertyLoader.load;
+import static cn.mageek.common.util.PropertyLoader.loadWorkThread;
 import static cn.mageek.namenode.main.NameNode.countDownLatch;
 
 /**
@@ -28,6 +29,7 @@ import static cn.mageek.namenode.main.NameNode.countDownLatch;
 public class DataNodeManager implements Runnable{
     private static final Logger logger = LoggerFactory.getLogger(DataNodeManager.class);
     private static String dataNodePort;
+    private static int dataNodeThread;
 //    private Map<String,Channel> dataNodeMap;//管理所有datanode
 //    private Map<String,String> dataNodeClientMap ;//管理所有datanode 对client开放的IP与端口
 //    private ConcurrentSkipListMap<Integer, String> sortedServerMap ;//管理所有datanode 对应 hash 和 ip:port
@@ -39,7 +41,8 @@ public class DataNodeManager implements Runnable{
             Properties pop = new Properties();
             pop.load(in);
             dataNodePort = load(pop,"namenode.datanode.port");// 对dataNode开放的端口
-//            logger.debug("config dataNodePort:{}", dataNodePort);
+            dataNodeThread = loadWorkThread(pop,"namenode.datanode.workThread");
+            logger.debug("config dataNodePort:{},dataNodeThread:{}", dataNodePort,dataNodeThread);
         } catch (IOException e) {
             logger.error("read config error",e);
         }
@@ -59,7 +62,7 @@ public class DataNodeManager implements Runnable{
     public void run() {
         // Configure the server.
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);//接收连接
-        EventLoopGroup workerGroup = new NioEventLoopGroup(2);//处理连接的I/O事件
+        EventLoopGroup workerGroup = new NioEventLoopGroup(dataNodeThread);//处理连接的I/O事件
         try {
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup)
