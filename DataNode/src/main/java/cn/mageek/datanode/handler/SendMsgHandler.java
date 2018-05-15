@@ -23,7 +23,7 @@ public class SendMsgHandler extends ChannelOutboundHandlerAdapter {
         DataResponse dataResponse = (DataResponse)msg;
         ByteBuf buf = Encoder.dataResponseToBytes(dataResponse);//把消息对象dataResponse转换为buffer
         ctx.writeAndFlush(buf);
-        logger.debug("sendMsg: {} to {}",dataResponse,ctx.channel().remoteAddress());
+//        logger.debug("sendMsg: {} to {}",dataResponse,ctx.channel().remoteAddress());
     }
 
 }

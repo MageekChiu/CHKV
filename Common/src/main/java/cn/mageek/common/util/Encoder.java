@@ -48,8 +48,8 @@ public class Encoder {
             case LINE_NUM:// *
                 break;
         }
-        if (ID.contains(IDSplitter)){// Client 发来的，需要补上ID
-            response += (outerSplit +ID);
+        if (ID.contains(IDSplitter)){// 是针对 Client 发来的 request 的 response，需要补上ID 和 命令间的分割，帮助客户端解决粘包问题
+            response += (ID +innerSplit+outerSplit);
         }
 //        logger.debug("response:{}",response);
         return Unpooled.copiedBuffer(response,CharsetUtil.UTF_8);
@@ -85,7 +85,7 @@ public class Encoder {
             requests.append(request);
         }
         String finalString = requests.toString();
-//        finalString = finalString.substring(0,finalString.length()-outerSplit.length());// 去掉最后一个 outerSplit
+//        finalString = finalString.substring(0,finalString.length()-outerSplit.length());// 去掉最后一个 outerSplit // 没必要
 //        logger.debug("final dataRequests string {},length:{},request num:{}",finalString,finalString.length(),dataRequests.size());
         return Unpooled.copiedBuffer(finalString,CharsetUtil.UTF_8);
     }

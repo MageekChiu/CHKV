@@ -18,7 +18,6 @@ import static cn.mageek.datanode.service.DataManager.clientMap;
 public class ClientHandler extends ChannelInboundHandlerAdapter {
 
     private static final Logger logger = LoggerFactory.getLogger(ClientHandler.class);
-    private static final AtomicInteger clientNumber = new AtomicInteger(0);
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {

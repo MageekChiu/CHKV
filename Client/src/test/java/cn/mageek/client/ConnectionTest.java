@@ -26,7 +26,7 @@ public class ConnectionTest {
         logger.debug(client.del("1321")+"");
         logger.debug(client.del("112")+"");
 
-        client.close();
+//        client.close();
 
 
 
@@ -44,9 +44,13 @@ public class ConnectionTest {
     public void SplitTest(){
         // 结果都是2 所以末尾有没有分隔符都一样
         String a = "aa\r\nbb";
-        logger.debug("{}",a.split("\r\n").length);
+        logger.debug("{}",a.split("\r\n").length);//2
         a = "aa\r\nbb\r\n";
-        logger.debug("{}",a.split("\r\n").length);
+        logger.debug("{}",a.split("\r\n").length);//2
+
+
+        a = "aa";
+        logger.debug("{}",a.split("\r\n").length);//1
 
     }
 }

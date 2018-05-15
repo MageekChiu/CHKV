@@ -32,18 +32,11 @@ import static cn.mageek.datanode.main.DataNode.DATA_POOL;
  */
 public class DataTransferHandler  extends ChannelInboundHandlerAdapter {
     private static final Logger logger = LoggerFactory.getLogger(DataTransferHandler.class);
-
-//    private final Map<String,String> DATA_POOL ;// 数据存储池
+    private static final String SET = "SET";
+    private AtomicInteger ok;
     private boolean isAll;
     private String dataNodeIPPort;
-//    private AtomicInteger okNumber;
-
-
-//    public DataTransferHandler(String dataNodeIPPort,Map<String, String> DATA_POOL,boolean isAll) {
-//        this.DATA_POOL = DATA_POOL;
-//        this.isAll = isAll;
-//        this.dataNodeIPPort = dataNodeIPPort;
-//    }
+    private List<String> transList;// 响应等待队列
 
     public DataTransferHandler(String dataNodeIPPort,boolean isAll) {
         this.isAll = isAll;
@@ -52,24 +45,38 @@ public class DataTransferHandler  extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-//        logger.debug("DataTransferHandler instance {},dataPool {}", this ,DATA_POOL);// instance 每次不一样，但是加上这一句下面的DATA_POOL 就不是空了,然后再注释掉也行了，很奇怪
-        logger.info("opened connection to: {}",ctx.channel().remoteAddress());
-//        okNumber = new AtomicInteger(0);// 置零
+        logger.info("opened dataTransfer connection to: {}",ctx.channel().remoteAddress());
         dataTransfer(ctx.channel());// 连接成功就开始转移数据
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        logger.info("closed connection: {}",ctx.channel().remoteAddress());
+        logger.info("closed dataTransfer connection: {}",ctx.channel().remoteAddress());
+        if (ok.get()>0){
+            logger.info("dataTransfer connection closed, some failed,{}",transList);
+        }
     }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         ByteBuf in = (ByteBuf) msg;
-//        logger.debug("DataNode DataTransferHandler received buffer: {}",in.toString(CharsetUtil.UTF_8));// 是一条一条的，没有粘在一起,但是是几乎同时出现的
-        DataResponse response = Decoder.bytesToDataResponse(in);
-        logger.debug("DataNode DataTransferHandler received : {}",response);
+        List<DataResponse> responses = Decoder.bytesToDataResponse(in);
+        responses.forEach((response)->{
+            logger.debug("DataNode dataTransfer received : {}",response);
+            if (LineType.SINGLE_RIGHT.equals(response.getLineType())){
+                transList.remove(response.getID());// 转移成功，删除等待列表
 
+                if(ok.decrementAndGet() == 0){//都收完了
+                    if(transList.isEmpty()) logger.info("dataTransfer completed, all succeeded");
+                    else logger.info("dataTransfer completed, some failed,{}",transList);
+                    ctx.channel().close();//断开连接就好,dataTransfer自然结束
+                    if (isAll){
+                        DATA_POOL = null;// 可以下线了，整个DataNode下线
+                    }
+                }
+                // 如果 没收完 或者 粘包导致数量没解析够 或者 某条数据确实没有转移成功，该channel就会超时，但是请求端不会报超时只会触发inactive，接收端才会报
+            }
+        });
         in.release();
     }
 
@@ -81,58 +88,64 @@ public class DataTransferHandler  extends ChannelInboundHandlerAdapter {
 
     private void dataTransfer(Channel channel) throws InterruptedException {
 
-        List<DataRequest> requests = new ArrayList<>();
-        String SET = "SET";
-//        DATA_POOL.remove(offlineKey);// 标记不能转移给其他节点
+        int allNum =  DATA_POOL.size();
+        List<DataRequest> requests = new ArrayList<>(allNum);
+        transList = new ArrayList<>(allNum);
+
         if (isAll){// 转移全部数据给下一个节点
             DATA_POOL.forEach((k,v)->{
-                requests.add(new DataRequest(SET,k,v));
-//                okNumber.incrementAndGet();
+                DataRequest r = new DataRequest(SET,k,v);
+                requests.add(r);
+                transList.add(r.getID());
             });
         }else {// 转移部分数据给上一个节点
-            int serverhash = getHash(dataNodeIPPort);
+            int serverHash = getHash(dataNodeIPPort);
             DATA_POOL.forEach((k,v)->{
                 int keyHash = getHash(k);
-                if (keyHash <= serverhash){// 需要转移
-                    requests.add(new DataRequest(SET,k,v));
-//                    okNumber.incrementAndGet();
+                if (keyHash <= serverHash){// 需要转移
+                    DataRequest r = new DataRequest(SET,k,v);
+                    requests.add(r);
+                    transList.add(r.getID());
                 }
             });
         }
 
         int listSize = requests.size();
         int transTime = (int) Math.ceil(listSize/pageSize);// 转移次数
-        AtomicInteger ok = new AtomicInteger(transTime) ;
-        logger.debug("all data:{}, transfer data :{},pageSize:{},transfer time: {}",DATA_POOL.size(),listSize,pageSize,transTime);
+//        ok = new AtomicInteger(transTime) ;
+        ok = new AtomicInteger(listSize) ;
+        logger.info("all data:{}, transfer data :{},pageSize:{},transfer time: {}",allNum,listSize,pageSize,transTime);
+
         for (int i = 0 ; i < transTime;i++){
             List<DataRequest> requests1 = new ArrayList<>((int) pageSize);
+            int index;// 转移数据的索引
             for (int j = 0; j < pageSize ; j++){
-                int index = (int) (i*pageSize+j);
-                if (index<listSize){
+                index = (int) (i*pageSize+j);
+                if (index<listSize){// 最后一页可能不够
                     DataRequest dataRequest = requests.get(index);
                     logger.debug("转移数据: {}",dataRequest);
                     requests1.add(dataRequest);
                 }
             }
-            // 实测，发得太快不会粘包，接收端能一个一个解析，但是由于每收到一个包就回复，可能导致回复太快粘成了一个巨大的包而被发送端
-            // io.netty.handler.codec.TooLongFrameException: Adjusted frame length exceeds 2048: 726616849 - discarded
-            // 一条一条的发也不行，而且每次都是 Adjusted frame length exceeds 2048: 726616849 - discarded 猜测不是长度原因而是解码的原因，异常栈里也有ObjectDecoder，先注释掉看看
-            // 终于明白，这个 DataTransfer 不需要ObjectDecoder 和 ObjectEncoder 因为我自己已经写了编解码的function
+
             ByteBuf buf = Encoder.dataRequestToBytes(requests1);// 批量转移
-            Thread.sleep(500);// 所以休息一段时间 ms 再继续发送
+            Thread.sleep(300);// 休息一段时间 ms 再继续发送
             int num = buf.readableBytes();
             ChannelFuture f = channel.writeAndFlush(buf);
-            f.addListener((ChannelFutureListener) channelFuture -> {
-                logger.debug("successfully sent buf length:{}",num);
-                if(ok.decrementAndGet() == 0){// 尽力而为即可，不去校验转移的正确性，若要校验就得去全部的response中一个一个查看，有error就重发，超时没有回复完毕就只能全部重发，因为对不上，不知道那个对错
-                    Thread.sleep(5000);// 等待完成通信
-                    logger.info("dataTransfer completed");
-                    channel.close();//断开连接就好,dataTransfer自然结束
-                    if (isAll){
-//                        DATA_POOL.put(offlineKey,offlineValue);// 可以下线了，整个DataNode下线
-                        DATA_POOL = null;
-                    }
-                }
+            f.addListener((ChannelFutureListener) cf -> {
+                logger.debug("sent buf length:{}",num);
+//                if(ok.decrementAndGet() == 0){//都发完了
+//                    Thread.sleep(8000);// 再等待一下，确保响应也都收完了// 实际上这里是不能确定的，只能说8000ms内没回复就算超时失败了。// 这样是不对的，因为是同一个线程，sleep会导致还有些response收不到
+//
+//                    if(transList.isEmpty()) logger.info("dataTransfer completed, all succeeded");
+//                    else logger.info("dataTransfer completed, some failed,{}",transList);
+//
+//                    channel.close();//断开连接就好,dataTransfer自然结束
+//
+//                    if (isAll){
+//                        DATA_POOL = null;// 可以下线了，整个DataNode下线
+//                    }
+//                }
             });
         }
 

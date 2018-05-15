@@ -227,7 +227,7 @@ public class Connection implements AutoCloseable {
                 }
                 if (nameNodeChannel!=null && nameNodeChannel.isActive()){
                     nameNodeChannel.writeAndFlush(watchRequest);
-                    logger.debug("send nameNode heartbeat:{},hash ring :{}",watchRequest,sortedServerMap);
+                    logger.debug("send nameNode heartbeat:{},local hash ring :{}",watchRequest,sortedServerMap);
                 }else {
                     logger.debug("nameNode heartbeat lost, retrying");
                     connect(nameNodeIP,nameNodePort);

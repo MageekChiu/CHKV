@@ -50,7 +50,6 @@ public class DataManager implements Runnable{
 
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);//接收连接
         EventLoopGroup workerGroup = new NioEventLoopGroup(workThread);//处理连接的I/O事件
-//        EventExecutorGroup businessGroup = new DefaultEventExecutorGroup(8);//处理耗时业务逻辑，我实际上为了统一起见把全部业务逻辑都放这里面了
 
         try {
             ServerBootstrap b = new ServerBootstrap();
@@ -70,7 +69,6 @@ public class DataManager implements Runnable{
 //                            p.addLast("LineBasedFrameDecoder",new LineBasedFrameDecoder(1024,true,true));// in //基于行的协议解码
 //                            p.addLast("StringDecoder",new StringDecoder());// in // 字符串解码器
                             p.addLast("RcvMsgHandler",new RcvMsgHandler());// in //将行数据解码为消息对象
-//                            p.addLast(businessGroup,"BusinessHandler",new BusinessHandler());// in //解析业务数据
                             p.addLast("BusinessHandler",new BusinessHandler());// in //解析业务数据，没有特别耗时的操作，还是不要切换线程
 
                         }
@@ -90,7 +88,6 @@ public class DataManager implements Runnable{
         } finally {
             workerGroup.shutdownGracefully();
             bossGroup.shutdownGracefully();
-//            businessGroup.shutdownGracefully();
         }
 
     }

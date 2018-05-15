@@ -80,33 +80,56 @@ public class Decoder {
      * @param in 输入buffer
      * @return DataRequest
      */
-    public static DataResponse bytesToDataResponse(ByteBuf in) throws Exception{
+    public static List<DataResponse> bytesToDataResponse(ByteBuf in) throws Exception{
 
-        String data = in.toString(CharsetUtil.UTF_8);
-        String[] datas = data.split(outerSplit);
-        String ID = "";
-        if (datas.length>1){// 是client发出的请求
-//            logger.debug("Client:{},{},{}",data,datas[0],datas[1]);
-            data = datas[0];
-            ID = datas[1];
+        List<DataResponse> responses = new LinkedList<>();
+
+        String dataAll = in.toString(CharsetUtil.UTF_8);
+        String[] datas = dataAll.split(outerSplit);
+        logger.debug("Decoder 获得 {} 条响应",datas.length);
+
+        for (String data: datas){
+            String[] lines = data.split(innerSplit);
+            String ID = "";
+            String lineType = data.substring(0,1);
+            DataResponse response;
+            if (data.contains(IDSplitter)){// 是client发出的请求的响应
+                ID = lines[lines.length-1];//+OK\r\n123123__@@__4r53243\r\n
+                String msg = "";
+                switch (lineType){
+                    case SINGLE_RIGHT:
+                    case SINGLE_ERROR:
+                    case INT_NUM:
+                        msg = lines[0].substring(1);
+                        break;
+                    case NEXT_LEN:
+                        if( data.contains("-1")) msg="-1";// $-1\r\n123123__@@__4r53243\r\n
+                        else msg = lines[1];// $3\r\nGGG\r\n123123__@@__4r53243\r\n
+                        break;
+                    case LINE_NUM:
+                        break;
+                }
+                response = new DataResponse(lineType,msg,ID);
+            }else{// 是redis发来地响应
+                String msg = "";
+                switch (lineType){
+                    case SINGLE_RIGHT:
+                    case SINGLE_ERROR:
+                    case INT_NUM:
+                        msg = data.substring(1,data.length()-innerSplit.length());// +OK\r\n
+                        break;
+                    case NEXT_LEN:
+                        if( data.contains("-1")) msg="-1";// $-1\r\n
+                        else msg = lines[1];// $3\r\nGGG\r\n
+                        break;
+                    case LINE_NUM:
+                        break;
+                }
+                response = new DataResponse(lineType,msg,ID);
+            }
+            responses.add(response);
         }
-        String lineType = data.substring(0,1);
-        String msg = "";
-        switch (lineType){
-            case SINGLE_RIGHT:
-            case SINGLE_ERROR:
-            case INT_NUM:
-                msg = data.substring(1,data.length()-innerSplit.length());
-                break;
-            case NEXT_LEN:
-                if( data.length()==(3+innerSplit.length())) msg="-1";// $-1\r\n
-                else msg = data.split(innerSplit)[1];// $3\r\nGGG\r\n
-                break;
-            case LINE_NUM:
-                break;
-        }
-        DataResponse response = new DataResponse(lineType,msg,ID);
-        return response;
+        return responses;
     }
 
     /**

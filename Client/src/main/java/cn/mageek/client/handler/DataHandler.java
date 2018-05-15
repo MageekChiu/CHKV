@@ -8,6 +8,7 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -38,9 +39,12 @@ public class DataHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         ByteBuf buf = (ByteBuf) msg;
-        DataResponse response = Decoder.bytesToDataResponse(buf);
-        logger.debug("DataNode received: {}",response);
-        dataResponseMap.put(response.getID(),response);// 放置结果
+        List<DataResponse> responses = Decoder.bytesToDataResponse(buf);
+        responses.forEach((response)->{
+            logger.debug("DataNode received: {}",response);
+            dataResponseMap.put(response.getID(),response);// 放置结果
+        });
+
 //        ctx.close();// 收到响应就关闭连接
     }
 
