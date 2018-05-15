@@ -29,7 +29,7 @@ hs_err_pid*
 out
 gen
 
-/Common/target/
+/Common/target/ 
 /Client/target/
 /DataNode/target/
 /NameNode/target/
