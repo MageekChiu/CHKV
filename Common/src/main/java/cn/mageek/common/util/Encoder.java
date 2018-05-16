@@ -46,12 +46,20 @@ public class Encoder {
                 else response = lineType+msg.length()+ innerSplit +msg+ innerSplit;
                 break;
             case LINE_NUM:// *
+//                response = lineType+(msg.split(innerSplit).length/2)+innerSplit+msg;//msg里面每个部分都自带长度和innerSplit，不用再加了
+                List<String> msgList = dataResponse.getMsgList();
+                response = lineType+msgList.size()+innerSplit;
+                StringBuilder builder = new StringBuilder();
+                msgList.forEach((v)->{
+                    builder.append("$").append(v.length()).append(innerSplit).append(v).append(innerSplit);
+                });
+                response += builder.toString();
                 break;
         }
         if (ID.contains(IDSplitter)){// 是针对 Client 发来的 request 的 response，需要补上ID 和 命令间的分割，帮助客户端解决粘包问题
             response += (ID +innerSplit+outerSplit);
         }
-//        logger.debug("response:{}",response);
+        logger.debug("Encoded response:{}",response.replace("\r\n","<br>"));
         return Unpooled.copiedBuffer(response,CharsetUtil.UTF_8);
     }
 
@@ -66,18 +74,18 @@ public class Encoder {
             String request = "";
             String key = dataRequest.getKey();
             String value = dataRequest.getValue();
-            switch (dataRequest.getCommand()){
+            String command = dataRequest.getCommand();
+            switch (command){
                 case "SET":
-                    request = "*3"+ innerSplit +"$3"+ innerSplit +"SET"+ innerSplit +"$"+key.length()+ innerSplit +key+ innerSplit +"$"+value.length()+ innerSplit +value+ innerSplit ;
+                    request = "*3"+ innerSplit +"$"+command.length()+ innerSplit +command+ innerSplit +"$"+key.length()+ innerSplit +key+ innerSplit +"$"+value.length()+ innerSplit +value+ innerSplit ;
                     break;
                 case "GET":
-                    request = "*2"+ innerSplit +"$3"+ innerSplit +"GET"+ innerSplit +"$"+key.length()+ innerSplit +key+ innerSplit ;
-                    break;
+                case "KEYS":
                 case "DEL":
-                    request = "*2"+ innerSplit +"$3"+ innerSplit +"DEL"+ innerSplit +"$"+key.length()+ innerSplit +key+ innerSplit ;
+                    request = "*2"+ innerSplit +"$"+command.length()+ innerSplit +command+ innerSplit +"$"+key.length()+ innerSplit +key+ innerSplit ;
                     break;
                 case "COMMAND":
-                    request = "*1"+ innerSplit +"$7"+ innerSplit +"COMMAND"+ innerSplit ;
+                    request = "*1"+ innerSplit +"$"+command.length()+ innerSplit +command+ innerSplit ;
                     break;
             }
             request += (dataRequest.getID()+innerSplit);// 补上ID，但是就不加字符长度了，不属于redis

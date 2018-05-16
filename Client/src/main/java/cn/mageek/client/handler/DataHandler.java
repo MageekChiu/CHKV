@@ -5,6 +5,7 @@ import cn.mageek.common.util.Decoder;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.util.CharsetUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,13 +40,18 @@ public class DataHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         ByteBuf buf = (ByteBuf) msg;
+//        logger.debug("raw msg {},length,{}",buf.toString(CharsetUtil.UTF_8),buf.readableBytes());
         List<DataResponse> responses = Decoder.bytesToDataResponse(buf);
         responses.forEach((response)->{
             logger.debug("DataNode received: {}",response);
             dataResponseMap.put(response.getID(),response);// 放置结果
         });
-
 //        ctx.close();// 收到响应就关闭连接
+    }
+
+    @Override
+    public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
+
     }
 
     @Override

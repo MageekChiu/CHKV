@@ -36,4 +36,8 @@ public class RcvMsgHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
+    @Override
+    public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
+
+    }
 }

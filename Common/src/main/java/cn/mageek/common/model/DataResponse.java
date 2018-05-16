@@ -1,6 +1,7 @@
 package cn.mageek.common.model;
 
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * 客户端获得数据
@@ -8,8 +9,9 @@ import java.io.Serializable;
  * @date 2018/5/6 0006:13:28
  */
 public class DataResponse implements Serializable {
-    private String lineType ;// +OK,-error msg,:number,$length\r\n string\r\n
+    private String lineType ;// +OK,-error msg,:number,$length\r\nstring\r\n
     private String msg;
+    private List<String> msgList;
 
     private String ID;// 要实现请求响应的对应，必须要ID
 
@@ -22,6 +24,32 @@ public class DataResponse implements Serializable {
         this.lineType = lineType;
         this.msg = msg;
         this.ID = ID;
+    }
+
+    public DataResponse(String lineType, List<String> msgList) {
+        this.lineType = lineType;
+        this.msgList = msgList;
+    }
+
+    public DataResponse(String lineType, List<String> msgList, String ID) {
+        this.lineType = lineType;
+        this.msgList = msgList;
+        this.ID = ID;
+    }
+
+    public DataResponse(String lineType, String msg, List<String> msgList, String ID) {
+        this.lineType = lineType;
+        this.msg = msg;
+        this.msgList = msgList;
+        this.ID = ID;
+    }
+
+    public List<String> getMsgList() {
+        return msgList;
+    }
+
+    public void setMsgList(List<String> msgList) {
+        this.msgList = msgList;
     }
 
     public String getLineType() {
@@ -50,6 +78,6 @@ public class DataResponse implements Serializable {
 
     @Override
     public String toString() {
-        return "DataResponse -- lineType:"+getLineType()+",msg:"+getMsg()+", ID: "+ID;
+        return "DataResponse -- lineType:"+getLineType()+",msg:"+getMsg()+",msgList:"+getMsgList()+", ID: "+ID;
     }
 }

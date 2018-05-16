@@ -154,15 +154,16 @@ public class Connection implements AutoCloseable {
         EventLoopGroup group = new NioEventLoopGroup();
         Bootstrap b = new Bootstrap();
         b.group(group)
-            .channel(NioSocketChannel.class)
-            .remoteAddress(new InetSocketAddress(dataNodeIP, Integer.parseInt(dataNodePort)))
-            .handler(new ChannelInitializer<SocketChannel>() {
-                @Override
-                public void initChannel(SocketChannel ch)  throws Exception {
-                    ChannelPipeline p = ch.pipeline();
-                    p.addLast(new DataHandler(dataResponseMap));// in
-                }
-            });
+                .channel(NioSocketChannel.class)
+                .option(ChannelOption.RCVBUF_ALLOCATOR,new FixedRecvByteBufAllocator(4096))// 最大收包长度设置为4096 byte
+                .remoteAddress(new InetSocketAddress(dataNodeIP, Integer.parseInt(dataNodePort)))
+                .handler(new ChannelInitializer<SocketChannel>() {
+                    @Override
+                    public void initChannel(SocketChannel ch)  throws Exception {
+                        ChannelPipeline p = ch.pipeline();
+                        p.addLast(new DataHandler(dataResponseMap));// in
+                    }
+                });
         try {
             ChannelFuture f = b.connect().sync();// 同步发起连接,阻塞等待
             dataNodeChannel = f.channel();

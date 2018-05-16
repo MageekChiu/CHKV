@@ -3,6 +3,8 @@ package cn.mageek.client;
 import cn.mageek.common.model.DataRequest;
 import cn.mageek.common.model.DataResponse;
 
+import java.util.List;
+
 import static cn.mageek.common.model.LineType.SINGLE_ERROR;
 
 /**
@@ -46,6 +48,12 @@ public class Client extends Connection {
         DataRequest request = new DataRequest("GET",key,"");
         DataResponse r =  sendCommand(request);
         return r.getMsg();
+    }
+
+    public List<String> keys(String key){
+        DataRequest request = new DataRequest("KEYS",key,"");
+        DataResponse r =  sendCommand(request);
+        return r.getMsgList();
     }
 
 }

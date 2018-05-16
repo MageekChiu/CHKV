@@ -4,6 +4,9 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 /**
  * @author Mageek Chiu
  * @date 2018/5/10 0010:20:51
@@ -23,7 +26,11 @@ public class ConnectionTest {
         logger.debug(client.set("192.168.0.136:10099","123456")+"");
         logger.debug(client.get("192.168.0.136:10099")+"");
         logger.debug(client.set("112","23")+"");
+        logger.debug(client.set("nba","23")+"");
+        logger.debug(client.set("nba rock","23")+"");
         logger.debug(client.del("1321")+"");
+        logger.debug(client.keys("nba").toString());
+        logger.debug(client.keys("*").toString());
         logger.debug(client.del("112")+"");
 
 //        client.close();
@@ -51,6 +58,14 @@ public class ConnectionTest {
 
         a = "aa";
         logger.debug("{}",a.split("\r\n").length);//1
+
+    }
+
+    @Test
+    public void regexTest(){
+        String regex = "a";
+        Matcher matcher = Pattern.compile(regex).matcher("sssa");
+        logger.debug(String.valueOf(matcher.matches()));
 
     }
 }
