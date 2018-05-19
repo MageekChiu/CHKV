@@ -13,6 +13,9 @@ public class DataRunnable implements Runnable {
 
     }
 
+    /**
+     * 可能需要提前创建连接
+     */
     public void connect(){
     }
 }

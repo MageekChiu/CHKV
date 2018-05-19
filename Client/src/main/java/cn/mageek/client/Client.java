@@ -23,8 +23,8 @@ public class Client extends Connection {
 
     /**
      *
-     * @param key
-     * @param value
+     * @param key key
+     * @param value value
      * @return 设置是否成功
      */
     public boolean set(String key, String value){
@@ -35,7 +35,7 @@ public class Client extends Connection {
 
     /**
      *
-     * @param key
+     * @param key key
      * @return 删除键个数
      */
     public int del(String key){
@@ -54,6 +54,12 @@ public class Client extends Connection {
         DataRequest request = new DataRequest("KEYS",key,"");
         DataResponse r =  sendCommand(request);
         return r.getMsgList();
+    }
+
+    public int expire(String key,long value){
+        DataRequest request = new DataRequest("EXPIRE",key,String.valueOf(value));
+        DataResponse r =  sendCommand(request);
+        return r.getLineType().equals(SINGLE_ERROR) ? -1 : Integer.parseInt(r.getMsg());
     }
 
 }

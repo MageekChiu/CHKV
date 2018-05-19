@@ -77,6 +77,7 @@ public class Encoder {
             String command = dataRequest.getCommand();
             switch (command){
                 case "SET":
+                case "EXPIRE":
                     request = "*3"+ innerSplit +"$"+command.length()+ innerSplit +command+ innerSplit +"$"+key.length()+ innerSplit +key+ innerSplit +"$"+value.length()+ innerSplit +value+ innerSplit ;
                     break;
                 case "GET":

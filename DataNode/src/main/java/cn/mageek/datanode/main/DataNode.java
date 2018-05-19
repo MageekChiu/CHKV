@@ -1,6 +1,7 @@
 package cn.mageek.datanode.main;
 
 import cn.mageek.common.model.HeartbeatType;
+import cn.mageek.datanode.job.DataRunnable;
 import cn.mageek.datanode.job.Heartbeat;
 import cn.mageek.datanode.res.CommandFactory;
 import cn.mageek.datanode.res.JobFactory;
@@ -12,6 +13,7 @@ import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,6 +37,7 @@ public class DataNode {
     //本节点的数据存储，ConcurrentHashMap 访问效率高于 ConcurrentSkipListMap，但是转移数据时就需要遍历而不能直接排序了，考虑到转移数据情况并不多，访问次数远大于转移次数，所以就不用ConcurrentSkipListMap
 //    private static volatile Map<String,String> DATA_POOL = new ConcurrentHashMap<>(1024) ;// 被置为null 则意味着节点该下线了
     public static volatile Map<String,String> DATA_POOL = new ConcurrentHashMap<>(1024) ;// 其他对象都有自己的引用实例域DATA_POOL，把他们的域置为null并不会使这个域DATA_POOL为null，所以要改变对象本身
+    public static volatile Map<String,Long> DATA_EXPIRE = new ConcurrentHashMap<>(1024);// 键-失效时间的秒表示
     public static volatile CountDownLatch countDownLatch;//任务个数
 
 
@@ -50,8 +53,8 @@ public class DataNode {
 
         try(InputStream in = ClassLoader.class.getResourceAsStream("/app.properties")){
             Properties pop = new Properties(); pop.load(in);
-            offlinePort = Integer.parseInt(load(pop,"offline.port")); //下线监听端口
-            offlineCmd = load(pop,"offline.cmd"); //下线命令字
+            offlinePort = Integer.parseInt(load(pop,"datanode.offline.port")); //下线监听端口
+            offlineCmd = load(pop,"datanode.offline.cmd"); //下线命令字
             logger.debug("config offlinePort:{},offlineCmd:{}", offlinePort,offlineCmd);
 
             // 初始化命令对象
@@ -149,7 +152,7 @@ public class DataNode {
         while (DATA_POOL != null){// 依然在线
 //        while (DATA_POOL.getOrDefault(offlineKey,onlineValue).equals(onlineValue)){// 依然在线
             Thread.sleep(5000);// 睡5秒再检查
-            logger.debug("WAITTING for dataTransfer to complete");
+            logger.debug("waiting for dataTransfer to complete");
         }
         // 数据已转移完毕并清空，可以下线
         logger.info("DataNode can be safely shutdown now,{}",pid);// DATA_POOL == null，数据转移完成，可以让运维手动关闭本进程了

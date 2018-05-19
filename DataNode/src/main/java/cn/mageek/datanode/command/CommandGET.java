@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static cn.mageek.common.model.LineType.NEXT_LEN;
+import static cn.mageek.datanode.main.DataNode.DATA_EXPIRE;
 import static cn.mageek.datanode.main.DataNode.DATA_POOL;
 
 
@@ -19,8 +20,19 @@ public class CommandGET extends AbstractDataNodeCommand {
 
     @Override
     public DataResponse receive(DataRequest dataRequest) {
-        String answer = DATA_POOL.get(dataRequest.getKey());
-        if(answer==null) return new DataResponse(NEXT_LEN,"-1");
+        String key = dataRequest.getKey();
+
+        Long expireTime = DATA_EXPIRE.get(key);
+//        Long nowTime = System.currentTimeMillis()*1000;
+        if (expireTime !=null && ( expireTime< System.currentTimeMillis() )){// 已经过期
+//            logger.debug("expireTime:{},nowTime:{}",expireTime,nowTime);
+            DATA_POOL.remove(key);
+            DATA_EXPIRE.remove(key);
+            return new DataResponse(NEXT_LEN,"-1");
+        }
+
+        String answer = DATA_POOL.get(key);
+        if(answer==null) return new DataResponse(NEXT_LEN,"-1");// 键不存在
         return new DataResponse(NEXT_LEN,answer);
     }
 

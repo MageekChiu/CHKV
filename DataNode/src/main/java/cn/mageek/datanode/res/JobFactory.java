@@ -57,7 +57,7 @@ public class JobFactory {
             String jobName = className.substring(idStart);
             logger.debug("Job class found: {} , jobName: {}",className,jobName);
             DataRunnable r = (DataRunnable) clazz.newInstance();
-            r.connect();// 每个job都要传入数据存储池，备用
+            r.connect();//
 //            Runnable r = (Runnable) clazz.newInstance();
             jobMap.put(jobName,r);
         }

@@ -5,13 +5,14 @@
 
 ## 系统设计 ##
 
-- **NameNode** : 维护 **key、DataNode节点** 在Hash环上的映射关系，用心跳检测 **DataNode**（一般被动，被动失效时主动询问三次），节点增减等系统信息变化时调整数据并通知 **Client**；
-- **DataNode** : 存储具体的数据，向 **NameNode** 主动发起心跳并采用请求响应的方式来实现上下线，便于 **NameNode** 发起挪动数据指令；
-- **Client** : 负责向 **NameNode** 请求 **DataNode** 数据和Hash算法等系统信息并监听其变化，操纵数据时直接向对应 **DataNode** 发起请求就行，暂时只包含`set,get,delete`三个操作；
+- **NameNode** : 维护 **DataNode节点** 列表，用心跳检测 **DataNode**（一般被动，被动失效时主动询问三次），节点增减等系统信息变化时调整数据并通知 **Client**；
+- **DataNode** : 存储具体的数据，向 **NameNode** 主动发起心跳并采用请求响应的方式来实现上下线，便于 **NameNode** 发起挪动数据指令，实际挪动操作由 **DataNode** 自行完成；
+- **Client** : 负责向 **NameNode** 请求 **DataNode** 相关信息并监听其变化，操纵数据时直接向对应 **DataNode** 发起请求就行，
+目前支持`set,get,delete,keys,expire`几个操作；
 
 **NameNode** 失效则整个系统不可用。
 
-<del>若当成内存数据库使用，则只要有一个 **DataNode** 失效（未经请求与数据转移就下线了）整个系统就不可对外服务；
+<del>若当成内存数据库使用，则要注意持久化，而且只要有一个 **DataNode** 失效（未经请求与数据转移就下线了）整个系统就不可对外服务；
 若当成内存缓存使用，则 **DataNode** 失效只是失去了一部分缓存，系统仍然可用。
 </del>
 
@@ -19,7 +20,27 @@
 
 
 **客户** 要使用 **CHKV** 就必须使用 **Client** 库或者自己依据协议（兼容redis）实现，可以是多种语言的API。
-也可以把 **Client** 当做 **Proxy**，使得 **CHKV** 内部结构对 **客户** 透明。
+当然也可以把 **Client** 当做 **Proxy**，使得 **CHKV** 内部结构对 **客户** 透明，亦即有如下两种方式：
+
+ 方式1：                         
+        
+          用户直接使用Client库
+                  ||
+            ||          ||
+        ||                      ||
+    NameNode        ||      ||      ||      ||
+                DataNode DataNode DataNode DataNode ......  
+
+ 方式2：          
+ 
+             用户通过Proxy访问    
+                  ||  
+             Client库构建的Proxy
+                  ||
+            ||          ||
+        ||                      ||
+    NameNode        ||      ||      ||      ||
+                DataNode DataNode DataNode DataNode ......            
 
 ## 分析 ##
 
@@ -29,12 +50,12 @@
 
 - **NameNode** 要保持和 **N** 个 **Client** 的TCP长连接，但是只有在集群发生变化时才有交互，所以使用IO多路复用负载就不大
 - **NameNode** 要和 **M** 个 **DataNode** 保持心跳，TCP请求响应式，负载与 **M** 和心跳间隔秒数 **interval** 有关
-- **DataNode** 与 **Client** 是TCP请求响应式操作，操作结束断开连接，也可以考虑加入连接池
+- **DataNode** 与 **Client** 是TCP请求响应式操作，**Client** 请求完毕后保留与该 **DataNode** TCP连接一段时间，以备后续访问复用连接，连接采取自动过期策略，类似于LRU
 - **DataNode** 与 **NameNode** 保持心跳
 - **Client** 与 **NameNode** 保持TCP长连接
 - **Client** 与 **DataNode** TCP请求响应式操作
 
-如下图所示，有4个连接，其中1、2要保持连接，3、4完成请求后就断开连接
+如下图所示，有4个连接：其中1、2要主动心跳来保持连接；3保持连接以备复用并可以自动超时断开，再次使用时重连；4完成数据转移后就断开连接。
 
                          NameNode
                        ||       ||     
@@ -46,8 +67,6 @@
           4、数据转移，可复用3  
 
 开发优先级：3、1、4、2
-
-具体性能要结合压测来分析。
 
 ## 代码结构 ##
 
@@ -79,21 +98,21 @@
         
 ## 使用方法 ##
 
-**DataNode** 运行起来就可以直接使用 **redis-cli** 连接，如`redis-cli -h 127.0.0.1 -p 10100`，并进行`set、get、del`操作；
+**DataNode** 运行起来就可以直接使用 **redis-cli** 连接，如`redis-cli -h 127.0.0.1 -p 10100`，并进行`set、get、del`等操作；
 
-注意：现在必须首先运行 **NameNode**，然后通过JVM参数的方式调整端口，可以在同一台机器上运行多个 **DataNode**，
-若要在不同机器上运行 **DataNode** 则可以直接修改配置文件
+注意：要首先运行 **NameNode**，然后可以通过JVM参数的方式调整端口，在同一台机器上运行多个 **DataNode**，
+若要在不同机器上运行 **DataNode** 也可以直接修改配置文件。
 
-新的DataNode可以直接上线，NameNode会自动通知下一个节点转移相应数据给新节点；DataNode若要下线，
-则可以通过telnet DataNode 节点的下线监听端口（TCP监听） 如 `telnet 127.0.0.1 6666` ，
-并发送 **k** 字符即可，待下线的DataNode收到命令 **k** 后会自动把数据全部转移给下一个DataNode
-然后提示进程pid，用户就可以关闭该DataNode进程了，如 **Linux**： `kill -s 9 23456`，**Windows**:`taskkill /pid 23456`
+新的 **DataNode** 可以直接上线，**NameNode** 会自动通知下一个节点转移相应数据给新节点；**DataNode** 若要下线，
+则可以通过 **telnet DataNode** 节点的下线监听端口（TCP监听） 如 `telnet 127.0.0.1 6666` ，
+并发送 **k** 字符即可，待下线的DataNode收到命令 **k** 后会自动把数据全部转移给下一个 **DataNode**
+然后提示**进程pid**，用户就可以关闭该DataNode进程了，如 **Linux**： `kill -s 9 23456`，**Windows**:`taskkill /pid 23456`
 
-NameNode和DataNode启动后就可以使用Client了，代码示例如下：
+**NameNode** 和 **DataNode** 启动后就可以使用 **Client** 了，代码示例如下：
 
-Client代码示例[在此，关键如下：][4]
+**Client** 代码示例[在此，关键如下：][4]
 
-        try(Client client = new Client("192.168.0.136","10102")){
+        try(Client client = new Client("192.168.0.136","10102")){// 支持自动关闭
             logger.debug(client.set("192.168.0.136:10099","123456")+"");
             logger.debug(client.get("192.168.0.136:10099")+"");
             logger.debug(client.set("112","23")+"");
@@ -103,7 +122,7 @@ Client代码示例[在此，关键如下：][4]
 
 ## 压力测试 ##
 
-在本机开启1个NameNode和1个DataNode直接压测，4次
+在本机开启1个 **NameNode** 和1个 **DataNode** 直接压测，4次
 
 `redis-benchmark -h 127.0.0.1 -p 10100 -c 100 -t set -q`
 - SET: 5006.76 requests per second
@@ -112,7 +131,7 @@ Client代码示例[在此，关键如下：][4]
 - SET: 5123.74.55 requests per second
 
 
-把以上2个节点日志级别都调整为info（实际上DataNode节点才会影响qps），重启
+把以上2个节点日志级别都调整为 `info`（实际上 **DataNode** 节点才会影响 **qps**），重启
 
 `redis-benchmark -h 127.0.0.1 -p 10100 -c 100 -t set -q`
 - SET: 62421.97 requests per second
@@ -120,7 +139,7 @@ Client代码示例[在此，关键如下：][4]
 - SET: 92592.59 requests per second
 - SET: 94517.96 requests per second
 
-可见日志对**qps**影响很大，是 **几k** 与 **几十k** 的不同数量级的概念，若把级别改成error，**平均qps**还能提升 **几k**，所以生产环境一定要注意日志级别。
+可见日志对**qps**影响很大，是 **几k** 与 **几十k** 的不同数量级的概念，若把级别改成 `error`，**平均qps**还能提升 **几k**，所以生产环境一定要注意日志级别。
 
 此外观察，不重启并且每次压测间隔都很小的话，qps一般会从 **65k** 附近开始，经过1、2次的 **88k** 左右，最终稳定在 **98k** 附近，数十次测试，最低 **62.4k**，最高**101.2k**。
 
@@ -139,7 +158,7 @@ Client代码示例[在此，关键如下：][4]
 
 经数十次测试，**qps** 稳定在 **128k** 附近，最高 **132.3k** ，最低 **122.7k** 可见**CHKV**的单个 **DataNode** 目前性能还比不过单个 **redis**。
 
-DataNode经过重构后，现在的压测结果如下
+**DataNode** 经过重构后，现在的压测结果如下
 
 `redis-benchmark -h 127.0.0.1 -p 10100 -c 100 -t set -q`
 
@@ -185,7 +204,7 @@ DataNode经过重构后，现在的压测结果如下
 - SET: 145384.02 requests per second
 
 经数十次测试，**qps** 稳定在 **142k** 附近，最高 **150.6k** ，稳定后最低 **137.2k**。
-Netty本身使用了IO多路复用，在客户端操作都比较轻量（压测这个 **set** 也确实比较轻量）择时线程数较少是合理的，
+**Netty** 本身使用了**IO多路复用**，在客户端操作都比较轻量（压测这个 **set** 也确实比较轻量）时选择线程数较少是合理的，
 因为这时候线程切换的代价超过了多线程带来的好处，这样我们也能理解 **redis** 单线程设计的初衷了，
 单线程虽然有些极端，但是如果考虑 **面向快速轻量操作的客户端** 和 **单线程的安全与简洁特性**，也是最佳的选择。
 

@@ -32,6 +32,11 @@ public class ConnectionTest {
         logger.debug(client.keys("nba").toString());
         logger.debug(client.keys("*").toString());
         logger.debug(client.del("112")+"");
+        logger.debug(client.expire("nba",5)+"");// 5秒过期
+        logger.debug(client.get("nba")+"");
+        Thread.sleep(6000);
+        logger.debug(client.get("nba")+"");
+
 
 //        client.close();
 
