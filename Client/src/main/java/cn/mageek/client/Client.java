@@ -67,5 +67,10 @@ public class Client extends Connection {
         DataResponse r =  sendCommand(request);
         return r.getLineType().equals(SINGLE_ERROR) ? -1 : Integer.parseInt(r.getMsg());
     }
+    public int decr(String key){
+        DataRequest request = new DataRequest("DECR",key,"");
+        DataResponse r =  sendCommand(request);
+        return r.getLineType().equals(SINGLE_ERROR) ? -1 : Integer.parseInt(r.getMsg());
+    }
 
 }

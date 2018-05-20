@@ -45,12 +45,15 @@ public class ConnectionTest {
         new Thread(() -> {
             logger.debug(client.incr("nba")+"");
             logger.debug(client.incr("nba")+"");
+            logger.debug(client.decr("nba")+"");
+            logger.debug(client.incr("nba")+"");
+            logger.debug(client.incr("nba")+"");
             logger.debug(client.incr("nba")+"");
         }).start();
 
         logger.debug(client.incr("nba")+"");
-        logger.debug(client.set("nba","10")+"");
-        logger.debug(client.incr("nba")+"");
+        logger.debug(client.decr("nba")+"");
+        logger.debug(client.decr("nba")+"");
 
 
 

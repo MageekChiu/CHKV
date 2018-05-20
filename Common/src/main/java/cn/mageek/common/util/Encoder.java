@@ -84,6 +84,7 @@ public class Encoder {
                 // command key
                 case "GET":
                 case "INCR":
+                case "DECR":
                 case "KEYS":
                 case "DEL":
                     request = "*2"+ innerSplit +"$"+command.length()+ innerSplit +command+ innerSplit +"$"+key.length()+ innerSplit +key+ innerSplit ;
