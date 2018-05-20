@@ -23,9 +23,7 @@ public class CommandGET extends AbstractDataNodeCommand {
         String key = dataRequest.getKey();
 
         Long expireTime = DATA_EXPIRE.get(key);
-//        Long nowTime = System.currentTimeMillis()*1000;
-        if (expireTime !=null && ( expireTime< System.currentTimeMillis() )){// 已经过期
-//            logger.debug("expireTime:{},nowTime:{}",expireTime,nowTime);
+        if (expireTime != null && ( expireTime< System.currentTimeMillis() )){// 已经过期
             DATA_POOL.remove(key);
             DATA_EXPIRE.remove(key);
             return new DataResponse(NEXT_LEN,"-1");

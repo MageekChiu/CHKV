@@ -27,7 +27,7 @@ public class ExpireChecking extends DataRunnable{
             Map.Entry<String,Long> e = it.next();
             String k = e.getKey();
             Long v = e.getValue();
-            if (v<noTime){// 已经过期
+            if (v<noTime){// 已经过期，删除两个键与值
                 it.remove();
                 DATA_POOL.remove(k);
                 i++;

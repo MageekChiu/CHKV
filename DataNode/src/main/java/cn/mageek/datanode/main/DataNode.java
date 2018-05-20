@@ -35,12 +35,9 @@ public class DataNode {
     private static String offlineCmd = "k";
 
     //本节点的数据存储，ConcurrentHashMap 访问效率高于 ConcurrentSkipListMap，但是转移数据时就需要遍历而不能直接排序了，考虑到转移数据情况并不多，访问次数远大于转移次数，所以就不用ConcurrentSkipListMap
-//    private static volatile Map<String,String> DATA_POOL = new ConcurrentHashMap<>(1024) ;// 被置为null 则意味着节点该下线了
-    public static volatile Map<String,String> DATA_POOL = new ConcurrentHashMap<>(1024) ;// 其他对象都有自己的引用实例域DATA_POOL，把他们的域置为null并不会使这个域DATA_POOL为null，所以要改变对象本身
+    public static volatile Map<String,String> DATA_POOL = new ConcurrentHashMap<>(1024) ;//被置为null 则意味着节点该下线了
     public static volatile Map<String,Long> DATA_EXPIRE = new ConcurrentHashMap<>(1024);// 键-失效时间的秒表示
     public static volatile CountDownLatch countDownLatch;//任务个数
-
-
 
     public static void main(String[] args){
         Thread currentThread = Thread.currentThread();
@@ -57,20 +54,14 @@ public class DataNode {
             offlineCmd = load(pop,"datanode.offline.cmd"); //下线命令字
             logger.debug("config offlinePort:{},offlineCmd:{}", offlinePort,offlineCmd);
 
-            // 初始化命令对象
-//            DATA_POOL.put("clientPort",clientPort);// 有了这一句下面才是DATA_POOL:1132277150,1。否则就是 DATA_POOL:0,0
-//            logger.debug("DATA_POOL:{},{}",DATA_POOL.hashCode(),DATA_POOL.size());
-//            CommandFactory.construct(DATA_POOL);// 所有command都是单例对象，共享这一个数据池（ConcurrentHashMap）
-            CommandFactory.construct();// 所有command都是单例对象
+            // 初始化命令对象,所有command都是单例对象
+            CommandFactory.construct();
 
             // 初始化任务对象
-//            JobFactory.construct(DATA_POOL);// 任务也可能用到数据池
             JobFactory.construct();
 
             //放入一些数据 做测试
-//            DATA_POOL.put(offlineKey,onlineValue);// 在线标志
             for (int i = 1 ; i <= 25 ; i++ ) DATA_POOL.put(threadName+i,threadName);
-
 
             // n 个线程分别启动 n 个服务
             dataManager = new Thread(new DataManager(),"DataManager");dataManager.start();
@@ -79,21 +70,6 @@ public class DataNode {
             //等待其他几个线程完全启动，然后才能对外提供服务
             countDownLatch.await();
             logger.info("DataNode is fully up now, pid:{}",pid);
-
-            // 监听来自外部的下线消息，收到后立马给NameNode发消息，经过允许和转移数据完成后才能下线也就是把DATA_POOL置为null
-
-            // 环境变量的方式
-//            String offline = System.getenv("DataNodeOffline");
-//            // 使用getProperties获得的其实是虚拟机的变量形如： -Djavaxxxx。
-//            // getenv方法才是真正的获得系统环境变量，比如Path之类。
-//            while (offline==null){
-//                offline = System.getenv("DataNodeOffline");// windows: set DataNodeOffline true 但是不是全局，只对当前cmd界面管用，所以不可行
-//                Thread.sleep(5000);// 睡5秒再检查
-//            }
-//            dataTransfer();
-
-            // 信号的方式
-//            Signal.handle(new Signal("ILL"),new MySignalHandler());// 注册信号，但是windows的信号比较麻烦
 
             // 开启socket，这样就能用telnet的方式来发送下线命令了
             signalHandler();
@@ -104,14 +80,6 @@ public class DataNode {
             JobFactory.destruct();
         }
     }
-
-//    static class MySignalHandler implements SignalHandler {
-//        @Override
-//        public void handle(Signal signal) {// 收到信号，给nameNode发送请求
-//            signal.getName();
-//            dataTransfer();
-//        }
-//    }
 
     private static void signalHandler() {
         ServerSocket serverSocket;
@@ -150,7 +118,6 @@ public class DataNode {
         heartbeat.run1(HeartbeatType.OFFLINE);// heartbeat对象的连接早已打开并且由定时任务一直保持着，所以主线程直接发起下线请示与数据转移工作
 
         while (DATA_POOL != null){// 依然在线
-//        while (DATA_POOL.getOrDefault(offlineKey,onlineValue).equals(onlineValue)){// 依然在线
             Thread.sleep(5000);// 睡5秒再检查
             logger.debug("waiting for dataTransfer to complete");
         }

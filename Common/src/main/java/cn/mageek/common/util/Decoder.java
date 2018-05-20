@@ -54,6 +54,7 @@ public class Decoder {
 //            if (allLineNumber != 7 && allLineNumber != 5  && allLineNumber != 3) throw new Exception("all line number Exception");// 报文总行数
 //            if (ckvLineNumber != 3 && ckvLineNumber != 2 && ckvLineNumber != 1) throw new Exception("command、key、value line number Exception");// command、key、value 的行数
 
+            // command
             String command = strings[2].toUpperCase();// 命令全部转大写
             if (Integer.parseInt(strings[1].substring(1)) != command.length()) throw new Exception("command length Exception");
             if (command.equals("COMMAND")){// 没有 key
@@ -61,15 +62,17 @@ public class Decoder {
                 continue;
             }
 
-            // 有 key
+            // command key
             String key = strings[4];
             if (Integer.parseInt(strings[3].substring(1)) != key.length()) throw new Exception("key length Exception");
-
             String value = "none";// 没有 value
+
+            // command key value
             if (allLineNumber >= 7){// 有 value
                 value = strings[6];
                 if (Integer.parseInt(strings[5].substring(1)) != value.length()) throw new Exception("value length Exception");
             }
+
             dataRequestList.add(new DataRequest(command,key,value,ID));
         }
         return dataRequestList;

@@ -23,7 +23,7 @@ public class CommandEXPIRE extends AbstractDataNodeCommand {
 
         if (!DATA_POOL.containsKey(dataRequest.getKey())) return new DataResponse(LineType.INT_NUM,"0");//不存在返回0
 
-        long seconds = Long.parseLong((dataRequest.getValue()))*1000;// 待存活秒数*1000 为 存活毫秒数
+        long seconds = Long.parseLong((dataRequest.getValue()))*1000;// 待存活秒数*1000 亦即 存活毫秒数
         seconds += (System.currentTimeMillis()); // 存活截止时间戳，单位毫秒
         DATA_EXPIRE.put(dataRequest.getKey(),seconds);//
         return new DataResponse(LineType.INT_NUM,"1");// 存在返回设置成功的数量
