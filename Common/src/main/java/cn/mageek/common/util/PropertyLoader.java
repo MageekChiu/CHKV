@@ -7,7 +7,6 @@ import java.util.Properties;
  * @date 2018/5/8 0008:13:04
  */
 public class PropertyLoader {
-
     /**
      * 先从环境变量读取属性，没有再从配置文件读取
      * @param pop 文件
@@ -28,8 +27,9 @@ public class PropertyLoader {
         int defaultNum = Runtime.getRuntime().availableProcessors()-1;
         int loadNum = Integer.parseInt(load(pop,key));
         return loadNum > 0 ? loadNum : defaultNum;// 如果配置小于0 则用默认值处理器数-1，大于0 就使用配置值
-
     }
+
+
 
 
 

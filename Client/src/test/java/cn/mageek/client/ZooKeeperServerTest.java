@@ -74,7 +74,6 @@ public class ZooKeeperServerTest {
                     logger.info("Successfully tried to Became Master");
                 }else {
                     logger.info("Failed to try to Became Master");
-
                 }
             }
         });

@@ -20,6 +20,8 @@ import java.util.Properties;
 import static cn.mageek.common.util.PropertyLoader.load;
 import static cn.mageek.common.util.PropertyLoader.loadWorkThread;
 import static cn.mageek.namenode.main.NameNode.countDownLatch;
+import static cn.mageek.namenode.main.NameNode.dataNodePort;
+import static cn.mageek.namenode.main.NameNode.dataNodeThread;
 
 /**
  * 管理所有dataNode
@@ -28,25 +30,27 @@ import static cn.mageek.namenode.main.NameNode.countDownLatch;
  */
 public class DataNodeManager implements Runnable{
     private static final Logger logger = LoggerFactory.getLogger(DataNodeManager.class);
-    private static String dataNodePort;
-    private static int dataNodeThread;
+
+//    private static String dataNodePort;
+//    private static int dataNodeThread;
+
 //    private Map<String,Channel> dataNodeMap;//管理所有datanode
 //    private Map<String,String> dataNodeClientMap ;//管理所有datanode 对client开放的IP与端口
 //    private ConcurrentSkipListMap<Integer, String> sortedServerMap ;//管理所有datanode 对应 hash 和 ip:port
 
 //    private CountDownLatch countDownLatch;//
 
-    static {
-        try( InputStream in = ClassLoader.class.getResourceAsStream("/app.properties")) {
-            Properties pop = new Properties();
-            pop.load(in);
-            dataNodePort = load(pop,"namenode.datanode.port");// 对dataNode开放的端口
-            dataNodeThread = loadWorkThread(pop,"namenode.datanode.workThread");
-            logger.debug("config dataNodePort:{},dataNodeThread:{}", dataNodePort,dataNodeThread);
-        } catch (IOException e) {
-            logger.error("read config error",e);
-        }
-    }
+//    static {
+//        try( InputStream in = ClassLoader.class.getResourceAsStream("/app.properties")) {
+//            Properties pop = new Properties();
+//            pop.load(in);
+//            dataNodePort = load(pop,"namenode.datanode.port");// 对dataNode开放的端口
+//            dataNodeThread = loadWorkThread(pop,"namenode.datanode.workThread");
+//            logger.debug("config dataNodePort:{},dataNodeThread:{}", dataNodePort,dataNodeThread);
+//        } catch (IOException e) {
+//            logger.error("read config error",e);
+//        }
+//    }
 
 //    public DataNodeManager(Map<String,Channel> dataNodeMap, Map<String,String> dataNodeClientMap , ConcurrentSkipListMap<Integer, String> sortedServerMap, CountDownLatch countDownLatch) {
 //        this.dataNodeMap = dataNodeMap;

@@ -44,7 +44,22 @@
 
 ## 分析 ##
 
-要想实现高可用有两点： **NameNode** 要主从双机热备，避免单点失效；每个 **DataNode** 可以做成主从复制甚至集群。
+要想实现高可用有两点： **NameNode** 要主从双机备，避免单点失效；
+每个 **DataNode** 可以做成主从复制甚至集群。
+
+目前实现了**NameNode**多机热备的高可用，如下图：
+
+                      Client
+                        ||
+                  ||           ||
+             ||                            ||
+         ||      ||            ||      ||      ||      ||
+     NameNode0  NameNode1    DataNode DataNode DataNode DataNode ......  
+    
+默认情况下 **Client** 和 **DataNode** 都与 **Master**：**NameNode0** 保持连接，**NameNode1** 作为 **Standby**。
+一旦 **NameNode0** 不可用，**Client** 和 **DataNode** 都能收到消息并开始和 **NameNode1** 建立连接。
+高可用依赖于第三方组件如**ZooKeeper、Redis**等，
+只需要基于特定第三方组件实现 `cn.mageek.common.ha.HAThirdParty` 抽象类即可，如本项目提供的例子 `cn.mageek.common.ha.ZKThirdParty`。
 
 各个组件之间的连接情况：
 
@@ -92,6 +107,7 @@
 - **Common** : 实现一些公共的功能，上面三个模块依赖于此模块 
 
     - command : 命令抽象类
+    - ha : HA相关类
     - model : 一些公用的pojo，如请求响应对象 
     - util : 一些工具类 
     - helper : 辅助脚本

@@ -15,4 +15,6 @@ public class Constants {
     public static final String onlineValue = "false";
 
     public static final String IDSplitter = "__@__";
+
+    public static final String IPSplitter = ":";
 }

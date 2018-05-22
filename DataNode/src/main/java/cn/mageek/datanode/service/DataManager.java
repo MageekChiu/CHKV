@@ -7,8 +7,6 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.timeout.ReadTimeoutHandler;
-import io.netty.util.concurrent.DefaultEventExecutorGroup;
-import io.netty.util.concurrent.EventExecutorGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,10 +15,9 @@ import java.io.InputStream;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
 
-import static cn.mageek.common.util.PropertyLoader.load;
 import static cn.mageek.common.util.PropertyLoader.loadWorkThread;
+import static cn.mageek.datanode.main.DataNode.clientPort;
 import static cn.mageek.datanode.main.DataNode.countDownLatch;
 
 /**
@@ -30,7 +27,6 @@ import static cn.mageek.datanode.main.DataNode.countDownLatch;
  */
 public class DataManager implements Runnable{
     private static final Logger logger = LoggerFactory.getLogger(DataManager.class);
-    private static String clientPort;
     private static int workThread ;
 
     public static final Map<String,Channel> clientMap = new ConcurrentHashMap<>();//管理所有客户端连接
@@ -38,7 +34,6 @@ public class DataManager implements Runnable{
     static {
         try( InputStream in = ClassLoader.class.getResourceAsStream("/app.properties")) {
             Properties pop = new Properties(); pop.load(in);
-            clientPort = load(pop,"datanode.client.port"); //dataNode对client开放的端口
             workThread = loadWorkThread(pop,"datanode.workThread"); // IO线程
             logger.debug("config clientPort:{}，workThread:{}", clientPort,workThread);
         } catch (IOException e) {
@@ -58,7 +53,7 @@ public class DataManager implements Runnable{
                     .option(ChannelOption.SO_BACKLOG, 512)//最大等待连接
                     .childHandler(new ChannelInitializer<SocketChannel>() {
                         @Override
-                        public void initChannel(SocketChannel ch) throws Exception {
+                        public void initChannel(SocketChannel ch){
                             ChannelPipeline p = ch.pipeline();
                             p.addLast("ReadTimeoutHandler",new ReadTimeoutHandler(100));// in // 多少秒超时
                             p.addLast("SendMsgHandler",new SendMsgHandler());// out //发送消息编码

@@ -22,6 +22,8 @@ import java.util.concurrent.CountDownLatch;
 
 import static cn.mageek.common.util.PropertyLoader.load;
 import static cn.mageek.common.util.PropertyLoader.loadWorkThread;
+import static cn.mageek.namenode.main.NameNode.clientPort;
+import static cn.mageek.namenode.main.NameNode.clientThread;
 import static cn.mageek.namenode.main.NameNode.countDownLatch;
 
 /**
@@ -31,24 +33,24 @@ import static cn.mageek.namenode.main.NameNode.countDownLatch;
  */
 public class ClientManager implements Runnable{
     private static final Logger logger = LoggerFactory.getLogger(DataNodeManager.class);
-    private static String clientPort;
-    private static int clientThread;
+//    private static String clientPort;
+//    private static int clientThread;
 
 //    private ConcurrentSkipListMap<Integer, String> sortedServerMap;//管理所有datanode
 //    private Map<String,Channel> clientMap ;//管理所有clientMap
 //    private CountDownLatch countDownLatch;//
 
-    static {
-        try( InputStream in = ClassLoader.class.getResourceAsStream("/app.properties")) {
-            Properties pop = new Properties();
-            pop.load(in);
-            clientPort = load(pop,"namenode.client.port"); ;// 对client开放的端口
-            clientThread = loadWorkThread(pop,"namenode.client.workThread");
-            logger.debug("config clientPort:{},clientThread:{}", clientPort,clientThread);
-        } catch (IOException e) {
-            logger.error("read config error",e);
-        }
-    }
+//    static {
+//        try( InputStream in = ClassLoader.class.getResourceAsStream("/app.properties")) {
+//            Properties pop = new Properties();
+//            pop.load(in);
+//            clientPort = load(pop,"namenode.client.port"); ;// 对client开放的端口
+//            clientThread = loadWorkThread(pop,"namenode.client.workThread");
+//            logger.debug("config clientPort:{},clientThread:{}", clientPort,clientThread);
+//        } catch (IOException e) {
+//            logger.error("read config error",e);
+//        }
+//    }
 
 //    public ClientManager(ConcurrentSkipListMap<Integer, String> sortedServerMap,Map<String,Channel> clientMap,CountDownLatch countDownLatch) {
 //        this.sortedServerMap = sortedServerMap;

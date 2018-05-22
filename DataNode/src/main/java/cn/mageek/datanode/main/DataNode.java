@@ -1,6 +1,9 @@
 package cn.mageek.datanode.main;
 
+import cn.mageek.common.ha.HAThirdParty;
+import cn.mageek.common.ha.ZKThirdParty;
 import cn.mageek.common.model.HeartbeatType;
+import cn.mageek.common.util.HAHelper;
 import cn.mageek.datanode.job.DataRunnable;
 import cn.mageek.datanode.job.Heartbeat;
 import cn.mageek.datanode.res.CommandFactory;
@@ -18,7 +21,10 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.function.Consumer;
+
 import static cn.mageek.common.util.PropertyLoader.load;
+import static com.sun.jmx.remote.internal.IIOPHelper.connect;
 
 /**
  * 管理本应用的所有服务
@@ -31,8 +37,23 @@ public class DataNode {
 
     private static final Logger logger = LoggerFactory.getLogger(DataNode.class);
     private static final String pid = ManagementFactory.getRuntimeMXBean().getName();
+
     private static int offlinePort = 6666;// 默认值，可调
     private static String offlineCmd = "k";
+
+    public static String nameNodeIP ;
+    public static String nameNodePort ;
+    public static String clientPort;
+    public static String clientIP;
+
+    // HA 信息
+    private static boolean useHA;
+    private static String connectAddr ;
+    private static int sessionTimeout;
+    private static int connectionTimeout;
+    private static String masterNodePath ;
+    private static int baseSleepTimeMs ;
+    private static int maxRetries ;
 
     //本节点的数据存储，ConcurrentHashMap 访问效率高于 ConcurrentSkipListMap，但是转移数据时就需要遍历而不能直接排序了，考虑到转移数据情况并不多，访问次数远大于转移次数，所以就不用ConcurrentSkipListMap
     public static volatile Map<String,String> DATA_POOL = new ConcurrentHashMap<>(1024) ;//被置为null 则意味着节点该下线了
@@ -54,6 +75,23 @@ public class DataNode {
             offlineCmd = load(pop,"datanode.offline.cmd"); //下线命令字
             logger.debug("config offlinePort:{},offlineCmd:{}", offlinePort,offlineCmd);
 
+            nameNodeIP = load(pop,"datanode.namenode.ip");// nameNode 对DataNode开放心跳IP
+            nameNodePort = load(pop,"datanode.namenode.port");// nameNode 对DataNode开放心跳Port
+            clientIP = load(pop,"datanode.client.ip");//dataNode对client开放的ip
+            clientPort = load(pop,"datanode.client.port");//dataNode对client开放的端口
+            logger.debug("Heartbeat config nameNodeIP:{},nameNodePort:{},clientIP:{},clientPort:{}", nameNodeIP, nameNodePort,clientIP,clientPort);
+
+            useHA = Boolean.parseBoolean(load(pop,"databode.useHA"));
+            if (useHA) {
+                logger.info("using HA");
+                connectAddr = load(pop, "datanode.zk.connectAddr");//
+                sessionTimeout = Integer.parseInt(load(pop, "datanode.zk.sessionTimeout")); //
+                connectionTimeout = Integer.parseInt(load(pop, "datanode.zk.connectionTimeout")); //
+                masterNodePath = load(pop, "datanode.zk.masterNodePath"); //
+                baseSleepTimeMs = Integer.parseInt(load(pop, "datanode.zk.baseSleepTimeMs")); //
+                maxRetries = Integer.parseInt(load(pop, "datanode.zk.maxRetries")); //
+            }
+
             // 初始化命令对象,所有command都是单例对象
             CommandFactory.construct();
 
@@ -71,6 +109,11 @@ public class DataNode {
             countDownLatch.await();
             logger.info("DataNode is fully up now, pid:{}",pid);
 
+            if (useHA){
+                HAThirdParty party = new ZKThirdParty(connectAddr,sessionTimeout,connectionTimeout,masterNodePath,baseSleepTimeMs,maxRetries);
+                dataNodeHA(party);
+            }
+
             // 开启socket，这样就能用telnet的方式来发送下线命令了
             signalHandler();
 
@@ -85,9 +128,9 @@ public class DataNode {
         ServerSocket serverSocket;
         try {
             serverSocket = new ServerSocket(offlinePort);// 监听信号端口，telnet 127.0.0.1 6666 。 输入字母 k 按回车就行
-            while (true) {
+            for (;;) {
                 //接收客户端连接的socket对象
-                try (Socket connection = serverSocket.accept()) {// 使用这个方式，收到消息后连接马上就断开了
+                try (Socket connection = serverSocket.accept()) {// 使用这个方式，try结束后会自动断开连接
                     //接收客户端传过来的数据，会阻塞
                     BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
                     String msg = br.readLine();
@@ -123,6 +166,41 @@ public class DataNode {
         }
         // 数据已转移完毕并清空，可以下线
         logger.info("DataNode can be safely shutdown now,{}",pid);// DATA_POOL == null，数据转移完成，可以让运维手动关闭本进程了
+    }
+
+    private static void dataNodeHA(HAThirdParty party ){
+
+        party.getInstantMaster();
+        Consumer<String> consumer = s -> {
+            if (s==null){
+                logger.error("masterNode is down, waiting");
+            }else{
+                logger.info("masterNode may have changed:{}",s);
+                HAHelper helper = new HAHelper(s);
+                String thisNameNodeIP = helper.getDataNodeIP();
+                String thisNameNodePort = helper.getDataNodePort();
+
+                Heartbeat heartbeat = (Heartbeat) JobFactory.getJob("Heartbeat");
+
+                if (!(thisNameNodeIP.equals(nameNodeIP)&&thisNameNodePort.equals(nameNodePort))){// 不同，那肯定需要重连
+                    logger.info("masterNode indeed have changed,reconnecting");
+                    heartbeat.disconnect();// 可能已经断掉了，但是加一下确保
+                    nameNodeIP = thisNameNodeIP;nameNodePort = thisNameNodePort;
+//                    heartbeat.connect();// 不需要在这里连接 定时任务自己会去连接
+                }else {// 相同，有可能断线后又上线
+                    if (!heartbeat.isConnected()){//断线了就重连
+                        heartbeat.disconnect();
+//                        heartbeat.connect();// 不需要在这里连接 定时任务自己会去连接
+                    }
+                    // 否则就没断线，只是nameNode和高可用注册中心连接抖动
+                }
+            }
+        };
+
+        party.beginWatch(consumer);
+        while (party.getMasterNode()==null);//忙等待
+        logger.debug("present master NameNode:{}",party.getMasterNode());
+
     }
 
 }
