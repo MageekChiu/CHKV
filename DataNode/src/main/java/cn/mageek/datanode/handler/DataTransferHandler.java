@@ -35,12 +35,16 @@ public class DataTransferHandler  extends ChannelInboundHandlerAdapter {
     private static final String SET = "SET";
     private AtomicInteger ok;
     private boolean isAll;
+    private boolean isSync;
     private String dataNodeIPPort;
     private List<String> transList;// 响应等待队列
 
-    public DataTransferHandler(String dataNodeIPPort,boolean isAll) {
+
+
+    public DataTransferHandler(String dataNodeIPPort,boolean isAll,boolean isSync) {
         this.isAll = isAll;
         this.dataNodeIPPort = dataNodeIPPort;
+        this.isSync = isSync;
     }
 
     @Override
@@ -70,8 +74,8 @@ public class DataTransferHandler  extends ChannelInboundHandlerAdapter {
                     if(transList.isEmpty()) logger.info("dataTransfer completed, all succeeded");
                     else logger.info("dataTransfer completed, some failed,{}",transList);
                     ctx.channel().close();//断开连接就好,dataTransfer自然结束
-                    if (isAll){
-                        DATA_POOL = null;// 可以下线了，整个DataNode下线
+                    if (isAll && !isSync){// 全部转移并且不是主从复制则 可以下线了
+                        DATA_POOL = null;
                     }
                 }
                 // 如果 没收完 或者 粘包导致数量没解析够 或者 某条数据确实没有转移成功，该channel就会超时，但是请求端不会报超时只会触发inactive，接收端才会报

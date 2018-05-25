@@ -22,6 +22,7 @@ public class DataTransfer extends DataRunnable{
     private static final Logger logger = LoggerFactory.getLogger(DataTransfer.class);
 
     private boolean isAll;
+    private boolean isSync;
     private String dataNodeIP;
     private String dataNodePort;
     private String dataNodeIPPort;
@@ -45,7 +46,8 @@ public class DataTransfer extends DataRunnable{
 //                        p.addLast(new ObjectDecoder(2048, ClassResolvers.cacheDisabled(this.getClass().getClassLoader())));// in 进制缓存类加载器
 //                        p.addLast(new ObjectEncoder());// out
 //                        p.addLast(businessGroup,"DataTransferHandler",new DataTransferHandler(dataNodeIPPort,DATA_POOL,isAll));// in
-                        p.addLast(businessGroup,"DataTransferHandler",new DataTransferHandler(dataNodeIPPort,isAll));// in
+                        p.addLast(businessGroup,"DataTransferHandler",new DataTransferHandler(dataNodeIPPort,isAll,isSync));// in
+
                     }
                 });
         try {
@@ -69,12 +71,17 @@ public class DataTransfer extends DataRunnable{
      * @param nextIPPort 转移到目标节点
      * @param isAll 是否全部转移
      */
-    public void connect(String nextIPPort,boolean isAll){
+    public void connect(String nextIPPort,boolean isAll,boolean isSync){
         dataNodeIPPort = nextIPPort;
         String[] strings = dataNodeIPPort.split(":");
         dataNodeIP = strings[0];
         dataNodePort = strings[1];
         this.isAll = isAll;
+        this.isSync = isSync;
+    }
+
+    public void connect(String nextIPPort,boolean isAll){
+        connect(nextIPPort,isAll,false);
     }
 
 }

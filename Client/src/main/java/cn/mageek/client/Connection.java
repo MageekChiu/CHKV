@@ -21,10 +21,7 @@ import io.netty.handler.codec.serialization.ObjectEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.net.InetSocketAddress;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.function.Consumer;
@@ -53,31 +50,35 @@ public class Connection implements AutoCloseable {
 
     private String nameNodeIP;
     private String nameNodePort;
-    private EventLoopGroup group;
-
-    private boolean useHA = true ;
+    private Map<String,String> useHA = null;
     private HAThirdParty party = null;
+    private EventLoopGroup group;
 
     /**
      * 仅仅构造
      */
-    Connection() { }
+    public Connection() { }
 
     /**
      * 构造并且连接NameNode
      * @param nameNodeIP nameNodePort
      * @param nameNodePort nameNodePort
      */
-    Connection(String nameNodeIP,String nameNodePort) {
+    public Connection(String nameNodeIP,String nameNodePort) {
         connect(nameNodeIP,nameNodePort);
     }
 
-    Connection(String nameNodeIP,String nameNodePort,boolean useHA) {
+    /**
+     * 构造并且连接NameNode并且需要设置HA，HA默认是null，传入参数就表示要使用
+     * @param nameNodeIP nameNodeIP
+     * @param  nameNodePort nameNodePort
+     * @param useHA HA相关参数
+     */
+    public Connection(String nameNodeIP,String nameNodePort,Map<String,String> useHA) {
         connect(nameNodeIP,nameNodePort,useHA);
     }
 
-
-    public void connect(String nameNodeIP,String nameNodePort,boolean useHA){
+    public void connect(String nameNodeIP,String nameNodePort,Map<String,String> useHA){
         this.useHA = useHA;
         connect(nameNodeIP,nameNodePort);
     }
@@ -100,7 +101,7 @@ public class Connection implements AutoCloseable {
             .remoteAddress(new InetSocketAddress(nameNodeIP, Integer.parseInt(nameNodePort)))
             .handler(new ChannelInitializer<SocketChannel>() {
                 @Override
-                public void initChannel(SocketChannel ch)  throws Exception {
+                public void initChannel(SocketChannel ch) {
                     ChannelPipeline p = ch.pipeline();
                     p.addLast(new ObjectDecoder(2048, ClassResolvers.cacheDisabled(this.getClass().getClassLoader())));// in
                     p.addLast(new ObjectEncoder());// out
@@ -138,10 +139,11 @@ public class Connection implements AutoCloseable {
             }
         });
 
-        if (useHA){
-            if (party==null){
+        if (useHA!=null){
+            if (party==null){// 只有首次需要构造
                 logger.debug("initializing third party");
-                party = new ZKThirdParty("127.0.0.1:2181,127.0.0.1:3181,127.0.0.1:4181",2000,8000,"/CHKV/masterNode",1000,10);
+                party = new ZKThirdParty(useHA.get("connectAddr"),Integer.parseInt(useHA.get("sessionTimeout")),Integer.parseInt(useHA.get("connectionTimeout")),
+                        useHA.get("masterNodePath"),Integer.parseInt(useHA.get("baseSleepTimeMs")),Integer.parseInt(useHA.get("maxRetries")));
             }
             clientHA(party);
         }
@@ -156,7 +158,7 @@ public class Connection implements AutoCloseable {
     public void disconnect(){
         logger.debug("主动关闭本连接");// 主动关闭需要手动释放资源并把HA置为null
         // 释放高可用
-        if (useHA && party != null) {
+        if (useHA!=null && party != null) {
             party.releaseCon();
             party = null;
         }
@@ -187,7 +189,7 @@ public class Connection implements AutoCloseable {
     }
 
     public void disconnectHA(){
-        if (useHA && party!=null){
+        if (useHA!=null && party!=null){
             while (nameNodeChannel == null || !nameNodeChannel.isActive()){
                 try {
                     logger.error("waiting for master info from registry");
@@ -226,7 +228,7 @@ public class Connection implements AutoCloseable {
                 .remoteAddress(new InetSocketAddress(dataNodeIP, Integer.parseInt(dataNodePort)))
                 .handler(new ChannelInitializer<SocketChannel>() {
                     @Override
-                    public void initChannel(SocketChannel ch)  throws Exception {
+                    public void initChannel(SocketChannel ch) {
                         ChannelPipeline p = ch.pipeline();
                         p.addLast(new DataHandler(dataResponseMap));// in
                     }
@@ -280,7 +282,7 @@ public class Connection implements AutoCloseable {
     }
 
     @Override
-    public void close() throws Exception {// 与上面的含参构造函数搭配 就能使用 try-with-source
+    public void close() {// 与上面的含参构造函数搭配 就能使用 try-with-source
         disconnect();
     }
 

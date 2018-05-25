@@ -18,7 +18,6 @@
 
 **DataNode** 失效（未经请求与数据转移就断开了和 **NameNode** 的连接）则 **NameNode** 需要及时通知 **Client**。
 
-
 **客户** 要使用 **CHKV** 就必须使用 **Client** 库或者自己依据协议（兼容redis）实现，可以是多种语言的API。
 当然也可以把 **Client** 当做 **Proxy**，使得 **CHKV** 内部结构对 **客户** 透明，亦即有如下两种方式：
 
@@ -42,8 +41,9 @@
     NameNode        ||      ||      ||      ||
                 DataNode DataNode DataNode DataNode ......            
 
-## 分析 ##
+## 可用性分析 ##
 
+### 高可用分析 ###
 要想实现高可用有两点： **NameNode** 要主从双机备，避免单点失效；
 每个 **DataNode** 可以做成主从复制甚至集群。
 
@@ -58,8 +58,12 @@
     
 默认情况下 **Client** 和 **DataNode** 都与 **Master**：**NameNode0** 保持连接，**NameNode1** 作为 **Standby**。
 一旦 **NameNode0** 不可用，**Client** 和 **DataNode** 都能收到消息并开始和 **NameNode1** 建立连接。
-高可用依赖于第三方组件如**ZooKeeper、Redis**等，
-只需要基于特定第三方组件实现 `cn.mageek.common.ha.HAThirdParty` 抽象类即可，如本项目提供的例子 `cn.mageek.common.ha.ZKThirdParty`。
+高可用依赖于第三方组件如**ZooKeeper、Redis**等，用户可以根据需要自行选择，
+只需要基于特定第三方组件实现 [`cn.mageek.common.ha.HAThirdParty`][6] 抽象类即可，如本项目提供的例子 `cn.mageek.common.ha.ZKThirdParty`。
+
+**DataNode** 由于需要IP入环，所以其本身高可用建议使用**主从复制**（代码本身实现，暂时采用全量复制）和**IP漂移**（ **Keepalived** 实现），可以参考[该文章][7]。
+
+### 连接分析 ###
 
 各个组件之间的连接情况：
 
@@ -120,7 +124,7 @@
 若要在不同机器上运行 **DataNode** 也可以直接修改配置文件。
 
 新的 **DataNode** 可以直接上线，**NameNode** 会自动通知下一个节点转移相应数据给新节点；**DataNode** 若要下线，
-则可以通过 **telnet DataNode** 节点的下线监听端口（TCP监听） 如 `telnet 127.0.0.1 6666` ，
+则可以通过 **telnet DataNode** 节点的下线监听端口（TCP监听） 如 `telnet 127.0.0.1 20000` ，
 并发送 **k** 字符即可，待下线的DataNode收到命令 **k** 后会自动把数据全部转移给下一个 **DataNode**
 然后提示**进程pid**，用户就可以关闭该DataNode进程了，如 **Linux**： `kill -s 9 23456`，**Windows**:`taskkill /pid 23456`
 
@@ -254,7 +258,7 @@
 
 水平有限，目前项目的问题还很多，可以改进的地方还很多，先列个清单：
 
-- 高可用性保证
+- <del> 高可用性保证 </del> 
 - <del> 断线重连 </del>
 - <del>DataNode迁移数据的正确性保障 </del>
 - 对于WeakReference的支持
@@ -273,3 +277,5 @@
 [3]: http://mageek.cn/
 [4]: https://github.com/MageekChiu/CHKV/blob/master/Client/src/test/java/cn/mageek/client/ConnectionTest.java
 [5]: https://zh.wikipedia.org/wiki/%E4%B8%80%E8%87%B4%E5%93%88%E5%B8%8C
+[6]: https://github.com/MageekChiu/CHKV/blob/master/Common/src/main/java/cn/mageek/common/ha/HAThirdParty.java
+[7]: http://mageek.cn/archives/97/

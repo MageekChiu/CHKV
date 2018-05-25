@@ -28,29 +28,6 @@ public class ZKThirdParty extends HAThirdParty {
     private int connectionTimeout;
     private String masterNodePath;
     private RetryPolicy policy;
-//
-//    private static String connectAddr = "127.0.0.1:2181,127.0.0.1:3181,127.0.0.1:4181";
-//    private static int sessionTimeout = 2000;
-//    private static int connectionTimeout = 8000;
-//    private static String masterNodePath = "/example/masterNode";
-//    private static RetryPolicy policy = new ExponentialBackoffRetry(1000,10);
-//
-//    static {
-//        try(InputStream in = ClassLoader.class.getResourceAsStream("/app.properties")){
-//            Properties pop = new Properties(); pop.load(in);
-//            connectAddr = load(pop,"datanode.zk.connectAddr");//
-//            sessionTimeout = Integer.parseInt(load(pop,"datanode.zk.sessionTimeout")); //
-//            connectionTimeout = Integer.parseInt(load(pop,"datanode.zk.connectionTimeout")); //
-//            masterNodePath = load(pop,"datanode.zk.masterNodePath"); //
-//            int baseSleepTimeMs = Integer.parseInt(load(pop,"datanode.zk.baseSleepTimeMs")); //
-//            int maxRetries = Integer.parseInt(load(pop,"datanode.zk.maxRetries")); //
-//            policy = new ExponentialBackoffRetry(baseSleepTimeMs,maxRetries);
-//            logger.debug("config connectAddr:{},offlineCmd:{},connectionTimeout{},masterNodePath:{},baseSleepTimeMs:{},maxRetries:{}", connectAddr,sessionTimeout,connectionTimeout,masterNodePath,baseSleepTimeMs,maxRetries);
-//        }catch(Exception ex) {
-//            logger.error("ZKThirdParty read config error:",ex);
-//        }
-//    }
-
 
     public ZKThirdParty(String connectAddr, int sessionTimeout, int connectionTimeout, String masterNodePath,int baseSleepTimeMs,int maxRetries) {
         this.connectAddr = connectAddr;
@@ -59,7 +36,6 @@ public class ZKThirdParty extends HAThirdParty {
         this.masterNodePath = masterNodePath;
         this.policy = new ExponentialBackoffRetry(baseSleepTimeMs,maxRetries);
         getCon();
-
     }
 
     @Override

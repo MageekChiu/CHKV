@@ -19,27 +19,10 @@ import static cn.mageek.datanode.main.DataNode.DATA_POOL;
  */
 public class HeartBeatHandler extends ChannelInboundHandlerAdapter {
     private static final Logger logger = LoggerFactory.getLogger(HeartBeatHandler.class);
-//
-//    private String clientIP;
-//    private String clientPort;
-//    private Map<String,String> DATA_POOL ;// 数据存储池
-//
-//    public HeartBeatHandler(String clientIP, String clientPort, Map<String, String> DATA_POOL) {
-//        this.clientIP = clientIP;
-//        this.clientPort = clientPort;
-//        this.DATA_POOL = DATA_POOL;
-//    }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         logger.info("opened connection to: {}",ctx.channel().remoteAddress());
-//        long memoryAvailable = Runtime.getRuntime().freeMemory();
-////        long cpuAvailable = Runtime.getRuntime().availableProcessors();
-//        HeartbeatRequest request = new HeartbeatRequest(clientIP+":"+clientPort,memoryAvailable);
-////        ByteBuf buf = Encoder.heartbeatRequestToBytes(request);
-////        ctx.writeAndFlush(Unpooled.copiedBuffer(buf));
-//        logger.debug("DataNode sent: " + request);
-//        ctx.writeAndFlush(request);// 因为这个in 上面的 out有decoder，所以可以直接发送对象，而不需要自己再写一遍转为bytebuf的encoder
     }
 
     @Override
@@ -51,7 +34,6 @@ public class HeartBeatHandler extends ChannelInboundHandlerAdapter {
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         HeartbeatResponse response = (HeartbeatResponse) msg;// 因为这个in 上面的 in 是decoder，所以直接可以获得对象
         logger.debug("DataNode received: {}",response);
-//        ctx.close();// 收到响应就关闭连接
         handleResponse(response);
     }
 
@@ -79,7 +61,6 @@ public class HeartBeatHandler extends ChannelInboundHandlerAdapter {
                 dataTransfer.connect(IPPort,true);
             }else{
                 logger.info("DataNode 最后一台下线，不需要转移数据");
-//                DATA_POOL.put(offlineKey,offlineValue);// 下线
                 DATA_POOL = null;
             }
         }

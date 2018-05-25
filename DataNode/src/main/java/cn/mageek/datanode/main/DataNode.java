@@ -4,7 +4,6 @@ import cn.mageek.common.ha.HAThirdParty;
 import cn.mageek.common.ha.ZKThirdParty;
 import cn.mageek.common.model.HeartbeatType;
 import cn.mageek.common.util.HAHelper;
-import cn.mageek.datanode.job.DataRunnable;
 import cn.mageek.datanode.job.Heartbeat;
 import cn.mageek.datanode.res.CommandFactory;
 import cn.mageek.datanode.res.JobFactory;
@@ -16,7 +15,6 @@ import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,7 +22,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
 
 import static cn.mageek.common.util.PropertyLoader.load;
-import static com.sun.jmx.remote.internal.IIOPHelper.connect;
 
 /**
  * 管理本应用的所有服务
@@ -47,7 +44,7 @@ public class DataNode {
     public static String clientIP;
 
     // HA 信息
-    private static boolean useHA;
+    private static boolean useNameNodeHA;
     private static String connectAddr ;
     private static int sessionTimeout;
     private static int connectionTimeout;
@@ -73,23 +70,23 @@ public class DataNode {
             Properties pop = new Properties(); pop.load(in);
             offlinePort = Integer.parseInt(load(pop,"datanode.offline.port")); //下线监听端口
             offlineCmd = load(pop,"datanode.offline.cmd"); //下线命令字
-            logger.debug("config offlinePort:{},offlineCmd:{}", offlinePort,offlineCmd);
-
             nameNodeIP = load(pop,"datanode.namenode.ip");// nameNode 对DataNode开放心跳IP
             nameNodePort = load(pop,"datanode.namenode.port");// nameNode 对DataNode开放心跳Port
             clientIP = load(pop,"datanode.client.ip");//dataNode对client开放的ip
             clientPort = load(pop,"datanode.client.port");//dataNode对client开放的端口
-            logger.debug("Heartbeat config nameNodeIP:{},nameNodePort:{},clientIP:{},clientPort:{}", nameNodeIP, nameNodePort,clientIP,clientPort);
+            logger.debug("Heartbeat config nameNodeIP:{},nameNodePort:{},clientIP:{},clientPort:{},offlinePort:{},offlineCmd:{}", nameNodeIP, nameNodePort,clientIP,clientPort,offlinePort,offlineCmd);
 
-            useHA = Boolean.parseBoolean(load(pop,"databode.useHA"));
-            if (useHA) {
-                logger.info("using HA");
+            useNameNodeHA = Boolean.parseBoolean(load(pop,"datanode.useNameNodeHA"));
+            if (useNameNodeHA) {
+                logger.info("using NameNodeHA");
                 connectAddr = load(pop, "datanode.zk.connectAddr");//
                 sessionTimeout = Integer.parseInt(load(pop, "datanode.zk.sessionTimeout")); //
                 connectionTimeout = Integer.parseInt(load(pop, "datanode.zk.connectionTimeout")); //
                 masterNodePath = load(pop, "datanode.zk.masterNodePath"); //
                 baseSleepTimeMs = Integer.parseInt(load(pop, "datanode.zk.baseSleepTimeMs")); //
                 maxRetries = Integer.parseInt(load(pop, "datanode.zk.maxRetries")); //
+            }else{
+                logger.info("not using NameNodeHA");
             }
 
             // 初始化命令对象,所有command都是单例对象
@@ -109,9 +106,9 @@ public class DataNode {
             countDownLatch.await();
             logger.info("DataNode is fully up now, pid:{}",pid);
 
-            if (useHA){
+            if (useNameNodeHA){
                 HAThirdParty party = new ZKThirdParty(connectAddr,sessionTimeout,connectionTimeout,masterNodePath,baseSleepTimeMs,maxRetries);
-                dataNodeHA(party);
+                dataNodeNameNodeHA(party);
             }
 
             // 开启socket，这样就能用telnet的方式来发送下线命令了
@@ -168,7 +165,7 @@ public class DataNode {
         logger.info("DataNode can be safely shutdown now,{}",pid);// DATA_POOL == null，数据转移完成，可以让运维手动关闭本进程了
     }
 
-    private static void dataNodeHA(HAThirdParty party ){
+    private static void dataNodeNameNodeHA(HAThirdParty party ){
 
         party.getInstantMaster();
         Consumer<String> consumer = s -> {
@@ -186,11 +183,11 @@ public class DataNode {
                     logger.info("masterNode indeed have changed,reconnecting");
                     heartbeat.disconnect();// 可能已经断掉了，但是加一下确保
                     nameNodeIP = thisNameNodeIP;nameNodePort = thisNameNodePort;
-//                    heartbeat.connect();// 不需要在这里连接 定时任务自己会去连接
+//                    heartbeat.connect();// 不需要在这里连接 定时任务心跳自己会去连接
                 }else {// 相同，有可能断线后又上线
                     if (!heartbeat.isConnected()){//断线了就重连
                         heartbeat.disconnect();
-//                        heartbeat.connect();// 不需要在这里连接 定时任务自己会去连接
+//                        heartbeat.connect();// 不需要在这里连接 定时任务心跳自己会去连接
                     }
                     // 否则就没断线，只是nameNode和高可用注册中心连接抖动
                 }

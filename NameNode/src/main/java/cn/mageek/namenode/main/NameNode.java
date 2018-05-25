@@ -73,7 +73,7 @@ public class NameNode {
             pop.load(in);
             dataNodePort = load(pop,"namenode.datanode.port");// 对dataNode开放的端口
             dataNodeThread = loadWorkThread(pop,"namenode.datanode.workThread");
-            clientPort = load(pop,"namenode.client.port"); ;// 对client开放的端口
+            clientPort = load(pop,"namenode.client.port");// 对client开放的端口
             clientThread = loadWorkThread(pop,"namenode.client.workThread");
             logger.debug("config dataNodePort:{},dataNodeThread:{},clientPort:{},clientThread:{}", dataNodePort,dataNodeThread,clientPort,clientThread);
 
@@ -94,12 +94,10 @@ public class NameNode {
             }else {
                 logger.info("not using HA");
             }
-
         } catch (Exception e) {
             logger.error("read config error",e);
         }
     }
-
 
     public static void main(String[] args){
         Thread.currentThread().setName("NameNode");
@@ -112,10 +110,6 @@ public class NameNode {
             CommandFactory.construct();
             // 初始化定时任务对象
             CronJobFactory.construct();
-
-//            dataNodeManager = new Thread(new DataNodeManager(dataNodeMap,dataNodeClientMap, sortedServerMap,countDownLatch),"DataNodeManager");dataNodeManager.start();
-//            clientManager = new Thread(new ClientManager(sortedServerMap,clientMap,countDownLatch),"ClientManager");clientManager.start();
-//            cronJobManager = new Thread(new CronJobManager(countDownLatch),"CronJobManager");cronJobManager.start();
 
             dataNodeManager = new Thread(new DataNodeManager(),"DataNodeManager");dataNodeManager.start();
             clientManager = new Thread(new ClientManager(),"ClientManager");clientManager.start();
@@ -147,17 +141,13 @@ public class NameNode {
                 dataNodeChanged = false;
                 logger.info("DataNode dataNodeChanged,now {},\r\n client:{}",sortedServerMap,clientMap);
                 WatchResponse watchResponse = new WatchResponse(sortedServerMap);
-                clientMap.forEach((k,v)->{
-                    v.writeAndFlush(watchResponse);
-                });
+                clientMap.forEach((k,v)-> v.writeAndFlush(watchResponse));
             }
             Thread.sleep(5000);// 每隔5秒检测一次是否有变化
         }
     }
 
     private static void nameNodeHA(HAThirdParty party ){
-
-//        if (!useHA) return;// 不使用HA就直接返回
 
         // 下面代码都与具体HA实现无关，能够复用
         party.setThisNode(thisNode);
@@ -184,7 +174,8 @@ public class NameNode {
                     logger.info("Failed to try to Became Master");
                 }
             }else{
-                logger.info("masterNode:{}",s);
+                masterNode = s;
+                logger.info("masterNode may changed:{}",masterNode);
             }
         };
         party.beginWatch(consumer);
