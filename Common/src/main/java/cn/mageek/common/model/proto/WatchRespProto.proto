@@ -1,0 +1,14 @@
+syntax = "proto3";
+option java_package = "cn.mageek.common.model";
+option java_outer_classname = "WatchRespProto";
+
+/*
+F:
+F:\workspace\java\CHKV\Common\src\main\java\cn\mageek\common\model\proto>
+
+D:/proto/bin/protoc.exe  -I=./  --java_out=../../../../../  ./WatchRespProto.proto
+
+*/
+message WatchResp {
+    map<int32,string> hashCircle = 1;
+}

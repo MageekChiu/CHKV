@@ -1,0 +1,16 @@
+syntax = "proto3";
+option java_package = "cn.mageek.common.model";
+option java_outer_classname = "WatchReqProto";
+
+/*
+F:
+F:\workspace\java\CHKV\Common\src\main\java\cn\mageek\common\model\proto>
+
+D:/proto/bin/protoc.exe  -I=./  --java_out=../../../../../  ./WatchReqProto.proto
+
+*/
+
+message WatchReq {
+    bool immediately = 1;
+}
+
