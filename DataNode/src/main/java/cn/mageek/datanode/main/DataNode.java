@@ -9,6 +9,7 @@ import cn.mageek.datanode.res.CommandFactory;
 import cn.mageek.datanode.res.JobFactory;
 import cn.mageek.datanode.service.DataManager;
 import cn.mageek.datanode.service.CronJobManager;
+import io.netty.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.io.*;
@@ -55,6 +56,8 @@ public class DataNode {
     //本节点的数据存储，ConcurrentHashMap 访问效率高于 ConcurrentSkipListMap，但是转移数据时就需要遍历而不能直接排序了，考虑到转移数据情况并不多，访问次数远大于转移次数，所以就不用ConcurrentSkipListMap
     public static volatile Map<String,String> DATA_POOL = new ConcurrentHashMap<>(1024) ;//被置为null 则意味着节点该下线了
     public static volatile Map<String,Long> DATA_EXPIRE = new ConcurrentHashMap<>(1024);// 键-失效时间的秒表示
+    public static final Map<String,Channel> clientMap = new ConcurrentHashMap<>();//管理所有客户端连接
+
     public static volatile CountDownLatch countDownLatch;//任务个数
 
     public static void main(String[] args){

@@ -24,11 +24,11 @@ public class ConnectionTest {
         Client client = new Client();
         client.connect("192.168.0.136","10102");
 
-        logger.debug(client.set("192.168.0.136:10099","123456")+"");
-        logger.debug(client.get("192.168.0.136:10099")+"");
+//        logger.debug(client.set("192.168.0.136:10099","123456")+"");
+//        logger.debug(client.get("192.168.0.136:10099")+"");
         logger.debug(client.set("112","23")+"");
-        logger.debug(client.set("nba","23")+"");
-        logger.debug(client.set("nba rock","23")+"");
+//        logger.debug(client.set("nba","23")+"");
+//        logger.debug(client.set("nba rock","23")+"");
 //        logger.debug(client.del("1321")+"");
 //        logger.debug(client.keys("nba").toString());
 //        logger.debug(client.keys("*").toString());
@@ -39,21 +39,30 @@ public class ConnectionTest {
 //        logger.debug(client.get("nba")+"");
 
 //        logger.debug(client.incr("nba")+"");
-        logger.debug(client.incr("nba")+"");
+//        logger.debug(client.incr("nba")+"");
+        logger.debug(client.append("112","a")+"");
+        logger.debug(client.append("112","a")+"");
 
 //
-//        new Thread(() -> {
+        new Thread(() -> {
 //            logger.debug(client.incr("nba")+"");
 //            logger.debug(client.incr("nba")+"");
 //            logger.debug(client.decr("nba")+"");
 //            logger.debug(client.incr("nba")+"");
 //            logger.debug(client.incr("nba")+"");
+            logger.debug(client.append("112","b")+"");
+            logger.debug(client.append("112","b")+"");
+            logger.debug(client.append("112","b")+"");
+            logger.debug(client.append("112","b")+"");
 //            logger.debug(client.incr("nba")+"");
-//        }).start();
+        }).start();
 //
 //        logger.debug(client.incr("nba")+"");
 //        logger.debug(client.decr("nba")+"");
 //        logger.debug(client.decr("nba")+"");
+
+        logger.debug(client.append("112","a")+"");
+        logger.debug(client.append("112","a")+"");
 
 
 

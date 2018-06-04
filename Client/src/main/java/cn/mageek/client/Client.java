@@ -73,4 +73,10 @@ public class Client extends Connection {
         return r.getLineType().equals(SINGLE_ERROR) ? -1 : Integer.parseInt(r.getMsg());
     }
 
+    public String append(String key,String value){
+        DataRequest request = new DataRequest("APPEND",key,value);
+        DataResponse r =  sendCommand(request);
+        return r.getMsg();
+    }
+
 }

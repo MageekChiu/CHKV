@@ -111,7 +111,7 @@ public class CronJobManager implements Runnable {
                             logger.error("master is down");
                             isMaster = false;
                         }else{// 是备机
-
+                            logger.debug("continue standby");
                         }
                     }
                     Thread.sleep(3000);

@@ -12,9 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static cn.mageek.common.util.PropertyLoader.loadWorkThread;
 import static cn.mageek.datanode.main.DataNode.clientPort;
@@ -28,8 +26,6 @@ import static cn.mageek.datanode.main.DataNode.countDownLatch;
 public class DataManager implements Runnable{
     private static final Logger logger = LoggerFactory.getLogger(DataManager.class);
     private static int workThread ;
-
-    public static final Map<String,Channel> clientMap = new ConcurrentHashMap<>();//管理所有客户端连接
 
     static {
         try( InputStream in = ClassLoader.class.getResourceAsStream("/app.properties")) {
