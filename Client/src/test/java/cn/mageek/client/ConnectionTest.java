@@ -26,7 +26,11 @@ public class ConnectionTest {
 
 //        logger.debug(client.set("192.168.0.136:10099","123456")+"");
 //        logger.debug(client.get("192.168.0.136:10099")+"");
-        logger.debug(client.set("112","23")+"");
+//        logger.debug(client.set("112","23")+"");
+//        logger.debug(client.setnx("112","2333323")+"");
+//        logger.debug(client.setnx("112","2333")+"");
+//        logger.debug(client.setnx("112","232323")+"");
+//        logger.debug(client.get("112")+"");
 //        logger.debug(client.set("nba","23")+"");
 //        logger.debug(client.set("nba rock","23")+"");
 //        logger.debug(client.del("1321")+"");
@@ -38,31 +42,35 @@ public class ConnectionTest {
 //        Thread.sleep(6000);
 //        logger.debug(client.get("nba")+"");
 
-//        logger.debug(client.incr("nba")+"");
-//        logger.debug(client.incr("nba")+"");
-        logger.debug(client.append("112","a")+"");
-        logger.debug(client.append("112","a")+"");
+        logger.debug(client.incrby("nba",10)+"");
+        logger.debug(client.incr("nba")+"");
+//        logger.debug(client.append("112","a")+"");
+//        logger.debug(client.append("112","a")+"");
 
 //
         new Thread(() -> {
-//            logger.debug(client.incr("nba")+"");
-//            logger.debug(client.incr("nba")+"");
-//            logger.debug(client.decr("nba")+"");
-//            logger.debug(client.incr("nba")+"");
-//            logger.debug(client.incr("nba")+"");
-            logger.debug(client.append("112","b")+"");
-            logger.debug(client.append("112","b")+"");
-            logger.debug(client.append("112","b")+"");
-            logger.debug(client.append("112","b")+"");
-//            logger.debug(client.incr("nba")+"");
+            logger.debug(client.incrby("nba",3)+"");
+            logger.debug(client.incr("nba")+"");
+            logger.debug(client.decrby("nba",4)+"");
+            logger.debug(client.incr("nba")+"");
+            logger.debug(client.incr("nba")+"");
+            logger.debug(client.incrby("nba",2)+"");
+//            logger.debug(client.append("112","b")+"");
+//            logger.debug(client.append("112","b")+"");
+//            logger.debug(client.append("112","b")+"");
+//            logger.debug(client.append("112","b")+"");
+            logger.debug(client.incrby("nba",4)+"");
         }).start();
 //
-//        logger.debug(client.incr("nba")+"");
-//        logger.debug(client.decr("nba")+"");
-//        logger.debug(client.decr("nba")+"");
+        logger.debug(client.incr("nba")+"");
+        logger.debug(client.decr("nba")+"");
+        logger.debug(client.decrby("nba",3)+"");
+        logger.debug(client.decr("nba")+"");
+        logger.debug(client.incrby("nba",6)+"");
+        logger.debug(client.decr("nba")+"");
 
-        logger.debug(client.append("112","a")+"");
-        logger.debug(client.append("112","a")+"");
+//        logger.debug(client.append("112","a")+"");
+//        logger.debug(client.append("112","a")+"");
 
 
 

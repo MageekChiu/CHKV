@@ -42,8 +42,9 @@ public class Decoder {
 
         List<DataRequest> dataRequestList = new LinkedList<>();
 
-        String[] msgs = s.split(outerSplit);// 多个命令之间用 \t\n 分割  // 这个不属于redis，是我为了自己方便加的
+        String[] msgs = s.split(outerSplit);// 多个命令之间用 \t\n 分割  // 这个不属于redis，是我为了自己方便加的，redis的没有/t/n 这里也会解析出一个命令
         logger.debug("Decoder 获得 {} 条命令",msgs.length);
+
         for (String msg : msgs) {
             String[] strings = msg.split(innerSplit);// 单个命令内部用 \r\n 分割
 

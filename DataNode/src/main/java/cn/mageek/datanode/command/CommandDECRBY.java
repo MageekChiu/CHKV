@@ -6,8 +6,6 @@ import cn.mageek.common.model.DataResponse;
 import cn.mageek.common.model.LineType;
 import cn.mageek.common.model.WebMsgObject;
 
-import java.util.concurrent.atomic.AtomicLong;
-
 import static cn.mageek.datanode.main.DataNode.DATA_POOL;
 
 /**
@@ -16,19 +14,21 @@ import static cn.mageek.datanode.main.DataNode.DATA_POOL;
  * @author Mageek Chiu
  * @date 2018/5/6 0007:13:49
  */
-public class CommandINCR extends AbstractDataNodeCommand {
+public class CommandDECRBY extends AbstractDataNodeCommand {
 
 //    private static final Logger logger = LoggerFactory.getLogger(CommandSET.class);
 
     @Override
     public DataResponse receive(DataRequest dataRequest) {
         String key = dataRequest.getKey();
-        return CommandINCRBY.incrBy(key,"1");
+        String val = "-"+dataRequest.getValue();
+        return CommandINCRBY.incrBy(key,val);
     }
 
     @Override
     public DataResponse send(WebMsgObject webMsgObject) {
         return null;
     }
+
 
 }

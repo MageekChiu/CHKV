@@ -8,7 +8,7 @@
 - **NameNode** : 维护 **DataNode节点** 列表，用心跳检测 **DataNode**（一般被动，被动失效时主动询问三次），节点增减等系统信息变化时调整数据并通知 **Client**；
 - **DataNode** : 存储具体的数据，向 **NameNode** 主动发起心跳并采用请求响应的方式来实现上下线，便于 **NameNode** 发起挪动数据指令，实际挪动操作由 **DataNode** 自行完成；
 - **Client** : 负责向 **NameNode** 请求 **DataNode** 相关信息并监听其变化，操纵数据时直接向对应 **DataNode** 发起请求就行，
-目前支持`set,get,delete,keys,expire,incr,decr`几个操作；
+目前支持`set,setnx,get,delete,keys,expire,incr,incrby,decr,decrby,append`几个操作；
 
 **NameNode** 失效则整个系统不可用。
 

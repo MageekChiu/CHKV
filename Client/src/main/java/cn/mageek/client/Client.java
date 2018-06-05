@@ -33,6 +33,12 @@ public class Client extends Connection {
         return !r.getLineType().equals(SINGLE_ERROR);
     }
 
+    public int setnx(String key, String value){
+        DataRequest request = new DataRequest("SETNX",key,value);
+        DataResponse r =  sendCommand(request);// 自动生成ID
+        return r.getLineType().equals(SINGLE_ERROR) ? -1 : Integer.parseInt(r.getMsg());
+    }
+
     /**
      *
      * @param key key
@@ -69,6 +75,30 @@ public class Client extends Connection {
     }
     public int decr(String key){
         DataRequest request = new DataRequest("DECR",key,"");
+        DataResponse r =  sendCommand(request);
+        return r.getLineType().equals(SINGLE_ERROR) ? -1 : Integer.parseInt(r.getMsg());
+    }
+
+    /**
+     *
+     * @param key key
+     * @param value must > 0
+     * @return
+     */
+    public int incrby(String key,int value){
+        DataRequest request = new DataRequest("INCRBY",key,String.valueOf(value));
+        DataResponse r =  sendCommand(request);
+        return r.getLineType().equals(SINGLE_ERROR) ? -1 : Integer.parseInt(r.getMsg());
+    }
+
+    /**
+     *
+     * @param key key
+     * @param value must > 0
+     * @return
+     */
+    public int decrby(String key,int value){
+        DataRequest request = new DataRequest("DECRBY",key,String.valueOf(value));
         DataResponse r =  sendCommand(request);
         return r.getLineType().equals(SINGLE_ERROR) ? -1 : Integer.parseInt(r.getMsg());
     }

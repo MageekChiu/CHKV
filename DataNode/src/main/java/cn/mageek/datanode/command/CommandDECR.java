@@ -21,19 +21,7 @@ public class CommandDECR extends AbstractDataNodeCommand {
     @Override
     public DataResponse receive(DataRequest dataRequest) {
         String key = dataRequest.getKey();
-
-        if (DATA_POOL.putIfAbsent(key,"-1")==null){// 之前不存在
-            return new DataResponse(LineType.INT_NUM, "-1");
-        }
-
-        String oldValue;
-        int newValue;
-        do {// 之前存在
-            oldValue = DATA_POOL.get(key);
-            newValue = Integer.parseInt(oldValue) - 1;
-        } while (!DATA_POOL.replace(key, oldValue, String.valueOf(newValue)));
-
-        return new DataResponse(LineType.INT_NUM, String.valueOf(newValue));
+        return CommandINCRBY.incrBy(key,"-1");
     }
 
     @Override

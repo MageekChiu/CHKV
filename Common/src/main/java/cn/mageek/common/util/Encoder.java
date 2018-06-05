@@ -78,8 +78,11 @@ public class Encoder {
             switch (command){
                 // command key value
                 case "SET":
+                case "SETNX":
                 case "EXPIRE":
                 case "APPEND":
+                case "INCRBY":
+                case "DECRBY":
                     request = "*3"+ innerSplit +"$"+command.length()+ innerSplit +command+ innerSplit +"$"+key.length()+ innerSplit +key+ innerSplit +"$"+value.length()+ innerSplit +value+ innerSplit ;
                     break;
                 // command key
