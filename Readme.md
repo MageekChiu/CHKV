@@ -70,9 +70,9 @@
 - **NameNode** 要保持和 **N** 个 **Client** 的TCP长连接，但是只有在集群发生变化时才有交互，所以使用IO多路复用负载就不大
 - **NameNode** 要和 **M** 个 **DataNode** 保持心跳，TCP请求响应式，负载与 **M** 和心跳间隔秒数 **interval** 有关
 - **DataNode** 与 **Client** 是TCP请求响应式操作，**Client** 请求完毕后保留与该 **DataNode** TCP连接一段时间，以备后续访问复用连接，连接采取自动过期策略，类似于LRU
-- **DataNode** 与 **NameNode** 保持心跳
-- **Client** 与 **NameNode** 保持TCP长连接
-- **Client** 与 **DataNode** TCP请求响应式操作
+- **DataNode** 与 **NameNode** 保持心跳 `Heartbeat`
+- **Client** 与 **NameNode** 保持TCP长连接,`Watch` **DataNode** 的变化
+- **Client** 与 **DataNode** TCP请求响应式操作，`Data` 的请求响应
 
 如下图所示，有4个连接：其中1、2要主动心跳来保持连接；3保持连接以备复用并可以自动超时断开，再次使用时重连；4完成数据转移后就断开连接。
 
@@ -127,6 +127,8 @@
 则可以通过 **telnet DataNode** 节点的下线监听端口（TCP监听） 如 `telnet 127.0.0.1 20000` ，
 并发送 **k** 字符即可，待下线的DataNode收到命令 **k** 后会自动把数据全部转移给下一个 **DataNode**
 然后提示**进程pid**，用户就可以关闭该DataNode进程了，如 **Linux**： `kill -s 9 23456`，**Windows**:`taskkill /pid 23456`
+
+**DataNode** 支持Expire，包含lazy与periodical两种删除策略，默认lazy,expireChecking大于0就是periodical+lazy
 
 **NameNode** 和 **DataNode** 启动后就可以使用 **Client** 了，代码示例如下：
 
@@ -252,6 +254,7 @@
 可见这个时候4、3个线程**qps**都大于2个线程，符合验证，但是4的**qps**又比3少，说明线程太多反而不好，
 然而把数据大小调到`900byte`时，4个线程又比3个线程的**qps**大了，
 所以这个参数真的要针对不同的应用场景做出不同的调整，总结起来就是轻量快速的操作适宜线程 **适当少**，重量慢速操作适宜线程 **适当多**。
+**DataNode** 中的 `workThread` 配置参数决定了IO线程数
 
 
 ## 未来工作 ##
@@ -261,6 +264,8 @@
 - <del> 高可用性保证 </del> 
 - <del> 断线重连 </del>
 - <del>DataNode迁移数据的正确性保障 </del>
+- DataNode迁移数据后清理空间节约内存 
+- 键空间通知事件，初步设计NameNode下发待监控的keys,DataNode在心跳中上报对应keys的事件，由NameNode下发给client,可以复用已有连接
 - 对于WeakReference的支持
 - 更多数据类型
 - 更多操作
