@@ -70,6 +70,7 @@ public class Heartbeat extends DataRunnable{
                 nameNodeChannel = channelFuture.channel();
                 logger.info("Heartbeat connection established");
                 run1(ONLINE);// 成功后就发起上线请求
+                dataNodeStatus = ONLINE;
             }
         });// 连接监听器
         ChannelFuture future = f.channel().closeFuture();// 采用异步加回调函数的做法，防止阻塞
@@ -91,6 +92,7 @@ public class Heartbeat extends DataRunnable{
     @Override
     public void run(){
         run1(RUNNING);// 运行中发送心跳
+        dataNodeStatus = RUNNING;
     }
 
     /**

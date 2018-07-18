@@ -1,6 +1,7 @@
 package cn.mageek.datanode.handler;
 
 import cn.mageek.common.model.HeartbeatResponse;
+import cn.mageek.common.model.HeartbeatType;
 import cn.mageek.datanode.job.DataTransfer;
 import cn.mageek.datanode.res.JobFactory;
 import io.netty.channel.ChannelHandlerContext;
@@ -9,9 +10,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.Map;
 
-import static cn.mageek.common.res.Constants.offlineKey;
-import static cn.mageek.common.res.Constants.offlineValue;
 import static cn.mageek.datanode.main.DataNode.DATA_POOL;
+import static cn.mageek.datanode.main.DataNode.dataNodeStatus;
 
 /**
  * @author Mageek Chiu
@@ -66,6 +66,7 @@ public class HeartBeatHandler extends ChannelInboundHandlerAdapter {
         }
 
         if(dataTransfer != null){
+            dataNodeStatus = HeartbeatType.TRANSFERRING;
             Thread transfer = new Thread(dataTransfer,"dataTransfer");
             transfer.start();// 新起一个线程，但是这样可能不稳定，待改进
         }

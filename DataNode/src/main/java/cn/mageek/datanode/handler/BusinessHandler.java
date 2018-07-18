@@ -2,12 +2,19 @@ package cn.mageek.datanode.handler;
 
 import cn.mageek.common.model.DataRequest;
 import cn.mageek.common.model.DataResponse;
+import cn.mageek.common.model.LineType;
 import cn.mageek.datanode.res.CommandFactory;
 import cn.mageek.common.command.AbstractDataNodeCommand;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.HashSet;
+import java.util.Set;
+
+import static cn.mageek.common.model.HeartbeatType.TRANSFERRING;
+import static cn.mageek.datanode.main.DataNode.dataNodeStatus;
 
 /**
  * 处理server接受到来自client的消息对象的handler，业务逻辑的核心
@@ -17,11 +24,25 @@ import org.slf4j.LoggerFactory;
 public class BusinessHandler extends ChannelInboundHandlerAdapter {
     private static final Logger logger = LoggerFactory.getLogger(BusinessHandler.class);
 
+    private static final Set<String> UPDATE_COMMAND = new HashSet<String>(){{
+        add("SET");add("SETNX");add("EXPIRE");add("APPEND");add("INCRBY");add("INCR");
+        add("DECRBY");add("DECR");add("DEL");
+        //add("GET");add("KEYS");add("COMMAND");
+    }};
+
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object obj) throws Exception {
         try {
             DataRequest dataRequest = (DataRequest)obj;//转换消息对象
-            AbstractDataNodeCommand command = CommandFactory.getCommand(dataRequest.getCommand());
+            String commandString = dataRequest.getCommand();
+            // 数据迁移中，禁止修改，可以查看
+            if (dataNodeStatus.equals(TRANSFERRING) && UPDATE_COMMAND.contains(commandString)){
+                DataResponse dataResponse = new DataResponse(
+                        LineType.SINGLE_ERROR,"DATA TRANSFERRING",dataRequest.getID());
+                ctx.writeAndFlush(dataResponse);//从当前位置往上找outBound
+                return;
+            }
+            AbstractDataNodeCommand command = CommandFactory.getCommand(commandString);
             if(command==null){
                 logger.error("error command: {}",dataRequest);
                 return;
