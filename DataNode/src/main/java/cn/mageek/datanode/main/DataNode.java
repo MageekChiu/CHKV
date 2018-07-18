@@ -22,6 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
 
+import static cn.mageek.common.model.HeartbeatType.OFFLINE;
 import static cn.mageek.common.util.PropertyLoader.load;
 
 /**
@@ -60,7 +61,7 @@ public class DataNode {
 
     public static volatile CountDownLatch countDownLatch;//任务个数
 
-    public static volatile String dataNodeStatus;// 节点状态
+    public static volatile String dataNodeStatus = OFFLINE;// 节点状态
 
     public static void main(String[] args){
         Thread currentThread = Thread.currentThread();
@@ -160,8 +161,8 @@ public class DataNode {
     private static void dataTransfer() throws InterruptedException {
         logger.warn("get offline signal");
         Heartbeat heartbeat = (Heartbeat) JobFactory.getJob("Heartbeat");
-        heartbeat.run1(HeartbeatType.OFFLINE);// heartbeat对象的连接早已打开并且由定时任务一直保持着，所以主线程直接发起下线请示与数据转移工作
-        dataNodeStatus = HeartbeatType.OFFLINE;
+        heartbeat.run1(OFFLINE);// heartbeat对象的连接早已打开并且由定时任务一直保持着，所以主线程直接发起下线请示与数据转移工作
+        dataNodeStatus = OFFLINE;
         while (DATA_POOL != null){// 依然在线
             Thread.sleep(5000);// 睡5秒再检查
             logger.debug("waiting for dataTransfer to complete");
